@@ -3,8 +3,8 @@
 A small Windows tray app, in the spirit of [CodexBar](https://github.com/steipete/CodexBar), that shows how
 much of your Claude and OpenCode Go/Zen usage limits you've used and when they reset.
 
-It shows two meters in the tray icon (Claude on top, OpenCode Go below; each shows its busiest window), a
-summary on hover, and a popup with every window and its reset countdown when you click it. Right-click for
+It shows two meters in the tray icon (Claude on top, OpenCode Go below; each shows its busiest window) and a
+summary on hover. The tray menu has **Show usage** (a popup with every window and its reset countdown),
 **Refresh now** and **Quit**. It refreshes every 5 minutes (`AI_USAGE_REFRESH_SECONDS`, minimum 60).
 
 ## Run it

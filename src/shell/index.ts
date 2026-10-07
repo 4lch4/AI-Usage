@@ -73,6 +73,10 @@ async function refresh(): Promise<void> {
     tray.setImage(await writeIcon([claude ?? null, opencode ?? null]))
     tray.setTitle(formatTooltip(results))
     pushToPanel()
+  } catch (error) {
+    // Providers already report their own failures; this only catches tray and icon trouble.
+    // Logging keeps a bad refresh from killing the app on the timer or at startup.
+    console.error('Refresh failed to reach the tray:', error)
   } finally {
     refreshing = false
   }
@@ -80,8 +84,10 @@ async function refresh(): Promise<void> {
 
 function pushToPanel(): void {
   if (!panel) return
+  // The popup's HTML is loaded a moment after the window exists, so a refresh that lands in
+  // that gap would otherwise run against a blank page and throw inside the webview.
   panel.webview.executeJavascript(
-    `window.render(${scriptJson(toPanelPayload(results, new Date()))})`,
+    `if (window.render) window.render(${scriptJson(toPanelPayload(results, new Date()))})`,
   )
 }
 
