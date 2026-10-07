@@ -3,10 +3,36 @@
 A small Windows tray app, in the spirit of [CodexBar](https://github.com/steipete/CodexBar), that shows how
 much of your Claude and OpenCode Go/Zen usage limits you've used and when they reset.
 
-The tray app is still being built. For now, `scripts/Get-AIUsage.ps1` checks that the data sources work on
-your machine.
+It shows two meters in the tray icon (Claude on top, OpenCode Go below; each shows its busiest window), a
+summary on hover, and a popup with every window and its reset countdown when you click it. Right-click for
+**Refresh now** and **Quit**. It refreshes every 5 minutes (`AI_USAGE_REFRESH_SECONDS`, minimum 60).
 
-## Usage probe
+## Run it
+
+Needs [Bun](https://bun.sh) 1.4+ on Windows 10 or 11.
+
+```powershell
+bun install
+bun run dev        # run the tray app with hot reload
+bun run build      # package a build
+bun run probe      # print current usage once, without the tray app
+bun test
+```
+
+**Claude** needs a Claude Code sign-in on this PC (open `claude` once if the token has expired).
+**OpenCode Go** needs an API key from opencode.ai (workspace > API Keys), saved so new terminals see it:
+
+```powershell
+setx OPENCODE_API_KEY "<key>"
+```
+
+The app also reads the saved user variable directly, so it works even when launched from somewhere that
+didn't inherit it.
+
+The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
+[ADR 1](docs/adr/0001-electrobun-tray-shell.md).
+
+## PowerShell probe
 
 ```powershell
 .\scripts\Get-AIUsage.ps1         # table
