@@ -16,7 +16,7 @@ your machine.
 | Provider     | Source                                                                    | Needs                                                                 |
 | ------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Claude       | `GET https://api.anthropic.com/api/oauth/usage` (5-hour and weekly)       | A Claude Code sign-in in `~/.claude/.credentials.json`                |
-| OpenCode Go  | `GET https://opencode.ai/zen/go/v1/usage` (5-hour, weekly, monthly)       | `-OpenCodeApiKey`, `$env:OPENCODE_API_KEY`, or `opencode auth login`  |
+| OpenCode Go  | `GET https://opencode.ai/zen/go/v1/usage` (5-hour, weekly, monthly)       | An API key from opencode.ai (workspace > API Keys) via `-OpenCodeApiKey` or `$env:OPENCODE_API_KEY` |
 | OpenCode Zen | `opencode.ai/console/api/billing/status` (prepaid balance)                | `-OpenCodeCookie` or `$env:OPENCODE_COOKIE` from a signed-in browser |
 
 If the Claude token has expired, open `claude` once so Claude Code refreshes it, then rerun the script.

@@ -131,7 +131,8 @@ function Get-OpenCodeApiKey {
 function Get-OpenCodeGoUsage {
   $key = Get-OpenCodeApiKey
   if (-not $key) {
-    throw 'No OpenCode API key found. Pass -OpenCodeApiKey, set $env:OPENCODE_API_KEY, or run ''opencode auth login''.'
+    throw ('No OpenCode API key found. Create one at https://opencode.ai (workspace > API Keys), then pass ' +
+      '-OpenCodeApiKey or set $env:OPENCODE_API_KEY. A Console account login is not enough on its own.')
   }
 
   $response = Invoke-RestMethod -Uri 'https://opencode.ai/zen/go/v1/usage' `
