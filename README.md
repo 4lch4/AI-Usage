@@ -27,7 +27,10 @@ after that until the window drops back below, so a Provider sitting at 95% does 
 minutes.
 
 Settings live in `%APPDATA%\AI-Usage\settings.json`. It is hand-editable: a missing, partial or
-corrupt file falls back to the defaults field by field rather than losing your tray.
+corrupt file falls back to the defaults field by field rather than losing your tray. The file is read
+once at startup, so **Quit and relaunch** after editing it. A value you set by hand is added to that
+Setting's dropdown, so the panel shows what is really in effect even if it isn't one of the listed
+choices.
 
 ## Run it
 

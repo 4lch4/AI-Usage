@@ -9,6 +9,7 @@ import {
 } from '../src/core/format.ts'
 import { renderTrayIcon, renderTrayPng } from '../src/core/icon.ts'
 import {
+  choicesWithCurrent,
   PANEL_HEIGHT,
   parsePanelMessage,
   renderPanelHtml,
@@ -204,6 +205,20 @@ describe('parsePanelMessage', () => {
   })
 })
 
+describe('choicesWithCurrent', () => {
+  test('offers the built-in choices in order', () => {
+    expect(choicesWithCurrent(ALERT_CHOICES, 90)).toEqual([...ALERT_CHOICES])
+  })
+
+  test('adds a hand-edited value so the dropdown shows what is really set', () => {
+    expect(choicesWithCurrent(ALERT_CHOICES, 20)).toEqual([20, 70, 80, 90, 95])
+  })
+
+  test('does not duplicate a value that is already offered', () => {
+    expect(choicesWithCurrent(REFRESH_CHOICES, 300)).toEqual([...REFRESH_CHOICES])
+  })
+})
+
 describe('panel', () => {
   const allProviders = [
     { id: 'claude' as const, name: 'Claude' },
@@ -239,6 +254,12 @@ describe('panel', () => {
       refreshSeconds: DEFAULT_SETTINGS.refreshSeconds,
       alertAtPercent: DEFAULT_SETTINGS.alertAtPercent,
     })
+  })
+
+  test('a hand-edited threshold is offered so the dropdown does not lie', () => {
+    const settings = { ...DEFAULT_SETTINGS, alertAtPercent: 20 }
+    const payload = toPanelPayload([usage()], now, { settings, allProviders })
+    expect(payload.choices.alertAtPercent).toContain(20)
   })
 
   test('HTML embeds the payload without allowing script injection', () => {

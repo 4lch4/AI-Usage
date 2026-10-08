@@ -20,6 +20,17 @@ export interface PanelPayload {
   openSettings: boolean
 }
 
+/**
+ * The values to offer for a dropdown, with the current one guaranteed to be among them.
+ *
+ * `settings.json` is documented as hand-editable, so a value outside the built-in choices is
+ * legitimate. Without this the dropdown would silently display the first choice instead, showing the
+ * user 70% while the app was alerting at 20%.
+ */
+export function choicesWithCurrent(values: readonly number[], current: number): number[] {
+  return [...new Set([...values, current])].sort((a, b) => a - b)
+}
+
 export function toPanelPayload(
   results: ProviderUsage[],
   now: Date,
@@ -52,8 +63,8 @@ export function toPanelPayload(
       alertAtPercent: options.settings.alertAtPercent,
     },
     choices: {
-      refreshSeconds: [...REFRESH_CHOICES],
-      alertAtPercent: [...ALERT_CHOICES],
+      refreshSeconds: choicesWithCurrent(REFRESH_CHOICES, options.settings.refreshSeconds),
+      alertAtPercent: choicesWithCurrent(ALERT_CHOICES, options.settings.alertAtPercent),
     },
     openSettings: options.openSettings ?? false,
   }
