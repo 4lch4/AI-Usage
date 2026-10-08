@@ -52,7 +52,14 @@ The popup is a single HTML string rendered by `src/core/panel.ts` and refreshed 
   rewriting one file; Tauri is the fallback.
 - The shell itself is only verified by running it on Windows.
 - The Panel opens from the **Show usage** Menu item rather than a left-click, because installing a
-  Menu takes over left-click on Windows and the button is not reported separately. Dropping the Menu
-  would give left-click-to-open, at the cost of losing Refresh and Quit from the tray.
+  Menu takes over left-click on Windows and the button is not reported separately.
+  **We keep the Menu deliberately.** Tauri v2 was considered and rejected for now: its
+  `TrayIconEvent::Click` does carry `button` and `rect`, but Tauri confines the TypeScript side to a
+  sandboxed webview, so the Providers (network, credentials file, registry read) would move to Rust
+  and take their tests with them. Electron would keep `src/core` and its tests untouched and does
+  separate `click` from `right-click`, at the cost of bundling Chromium. Revisit if the Menu's
+  ergonomics start to matter more than either. Dropping the Menu
+  would give left-click-to-open on both buttons, at the cost of moving Refresh and Quit into the
+  Panel.
 - The icon is written as an ICO wrapping a PNG. `renderTrayIcon` returns the ICO;
   `renderTrayPng` is the bare PNG the tests decode.
