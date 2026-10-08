@@ -43,6 +43,11 @@ let refreshing = false
 let timer: ReturnType<typeof setInterval> | undefined
 let alerted = new Set<string>()
 
+// Settings load before the Tray is built, not after. The Tray's first icon is drawn from the
+// current settings, so loading them afterwards draws the default providers for a frame and then
+// redraws: a Provider switched off flickers into existence on every launch.
+settings = await loadSettings({ configDir })
+
 const tray = new Tray({
   title: 'AI Usage: loading…',
   image: await writeIcon(),
@@ -243,7 +248,6 @@ function quit(): void {
   process.exit(0)
 }
 
-settings = await loadSettings({ configDir })
 await refresh()
 restartTimer()
 console.log(
