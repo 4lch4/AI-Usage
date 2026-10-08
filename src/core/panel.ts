@@ -1,5 +1,6 @@
 import { type Level, levelFor } from './format.ts'
-import type { ProviderUsage } from './types.ts'
+import { ALERT_CHOICES, REFRESH_CHOICES, type Settings } from './settings.ts'
+import type { ProviderId, ProviderUsage } from './types.ts'
 
 export interface PanelPayload {
   providers: {
@@ -10,23 +11,51 @@ export interface PanelPayload {
     windows: { label: string; usedPercent: number; level: Level; resetsAt: string | null }[]
   }[]
   fetchedAt: string
+  /** Which Providers the Panel can switch on and off. Ordered, so the list is stable. */
+  allProviders: { id: string; name: string; visible: boolean }[]
+  settings: { refreshSeconds: number; alertAtPercent: number }
+  /** Which interval options and thresholds to offer, so the choices live in `settings.ts`. */
+  choices: { refreshSeconds: number[]; alertAtPercent: number[] }
+  /** Open with the Settings section showing, because the user asked for it from the tray. */
+  openSettings: boolean
 }
 
-export function toPanelPayload(results: ProviderUsage[], now: Date): PanelPayload {
+export function toPanelPayload(
+  results: ProviderUsage[],
+  now: Date,
+  options: {
+    settings: Settings
+    allProviders: readonly { id: ProviderId; name: string }[]
+    openSettings?: boolean
+  },
+): PanelPayload {
+  const visible = new Set(options.settings.visibleProviders)
   return {
     fetchedAt: now.toISOString(),
-    providers: results.map(result => ({
-      id: result.id,
-      name: result.name,
-      error: result.error,
-      stale: result.stale,
-      windows: result.windows.map(w => ({
-        label: w.label,
-        usedPercent: w.usedPercent,
-        level: levelFor(w.usedPercent),
-        resetsAt: w.resetsAt?.toISOString() ?? null,
+    providers: results
+      .filter(result => visible.has(result.id))
+      .map(result => ({
+        id: result.id,
+        name: result.name,
+        error: result.error,
+        stale: result.stale,
+        windows: result.windows.map(w => ({
+          label: w.label,
+          usedPercent: w.usedPercent,
+          level: levelFor(w.usedPercent),
+          resetsAt: w.resetsAt?.toISOString() ?? null,
+        })),
       })),
-    })),
+    allProviders: options.allProviders.map(p => ({ ...p, visible: visible.has(p.id) })),
+    settings: {
+      refreshSeconds: options.settings.refreshSeconds,
+      alertAtPercent: options.settings.alertAtPercent,
+    },
+    choices: {
+      refreshSeconds: [...REFRESH_CHOICES],
+      alertAtPercent: [...ALERT_CHOICES],
+    },
+    openSettings: options.openSettings ?? false,
   }
 }
 
@@ -54,7 +83,21 @@ h2 { margin:0 0 8px; font-size:13px; font-weight:600; }
 .fill { height:100%; border-radius:3px; }
 .ok { background:var(--ok); } .warn { background:var(--warn); } .critical { background:var(--critical); }
 .error { color:var(--critical); font-size:12px; margin-top:6px; }
-footer { text-align:right; }
+footer { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+button.gear { background:none; border:0; color:var(--muted); font:inherit; padding:2px 6px; border-radius:6px;
+  cursor:pointer; }
+button.gear:hover, button.gear:focus-visible { background:var(--card); color:var(--fg); outline:none; }
+#settings[hidden] { display:none; }
+.field { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.field:last-child { margin-bottom:0; }
+.field span { color:var(--fg); }
+select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--track);
+  border-radius:6px; padding:2px 4px; }
+.providers { border-top:1px solid var(--track); margin-top:10px; padding-top:10px; }
+.check { display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; }
+.check:last-child { margin-bottom:0; }
+.check input { margin:0; accent-color:var(--ok); }
+.note { margin-top:10px; }
 `
 
 const SCRIPT = `
@@ -73,6 +116,70 @@ function el(tag, cls, text) {
   return node;
 }
 var current = window.__INITIAL__;
+var settingsOpen = current.openSettings;
+var CHOICES = current.choices;
+function send(message) {
+  if (window.__electrobunSendToHost) window.__electrobunSendToHost(message);
+}
+function select(value, options) {
+  var node = el('select');
+  options.forEach(function (o) {
+    var option = el('option', '', o.label);
+    option.value = String(o.value);
+    if (o.value === value) option.selected = true;
+    node.appendChild(option);
+  });
+  return node;
+}
+function field(label, control) {
+  var row = el('div', 'field');
+  row.appendChild(el('span', '', label));
+  row.appendChild(control);
+  return row;
+}
+function renderSettings(payload) {
+  var box = el('section');
+  box.id = 'settings';
+  box.hidden = !settingsOpen;
+
+  var interval = select(payload.settings.refreshSeconds, CHOICES.refreshSeconds.map(function (s) {
+    return { value: s, label: s < 60 ? s + 's' : s / 60 + ' min' };
+  }));
+  interval.addEventListener('change', function () {
+    send({ type: 'settings', patch: { refreshSeconds: Number(interval.value) } });
+  });
+  box.appendChild(field('Refresh every', interval));
+
+  var alertAt = select(payload.settings.alertAtPercent, CHOICES.alertAtPercent.map(function (p) {
+    return { value: p, label: p + '% used' };
+  }));
+  alertAt.addEventListener('change', function () {
+    send({ type: 'settings', patch: { alertAtPercent: Number(alertAt.value) } });
+  });
+  box.appendChild(field('Warn me at', alertAt));
+
+  var group = el('div', 'providers');
+  group.appendChild(el('div', 'note', 'Show in the tray'));
+  payload.allProviders.forEach(function (p) {
+    var label = el('label', 'check');
+    var box2 = el('input');
+    box2.type = 'checkbox';
+    box2.checked = p.visible;
+    box2.addEventListener('change', function () {
+      send({ type: 'providerVisibility', id: p.id, visible: box2.checked });
+    });
+    label.appendChild(box2);
+    label.appendChild(el('span', '', p.name));
+    group.appendChild(label);
+  });
+  box.appendChild(group);
+  return box;
+}
+function measure() {
+  // The shell sizes the window from this, so the Panel is never taller than its content and an
+  // error message cannot be clipped by a fixed height.
+  send({ type: 'height', value: Math.ceil(document.documentElement.scrollHeight) });
+}
 function render(payload) {
   current = payload;
   var root = document.getElementById('root');
@@ -97,16 +204,31 @@ function render(payload) {
     if (p.error) card.appendChild(el('div', 'error', p.error));
     root.appendChild(card);
   });
+  if (!payload.providers.length) {
+    var empty = el('section');
+    empty.appendChild(el('div', 'note', 'No providers shown. Turn one on below.'));
+    root.appendChild(empty);
+  }
+  root.appendChild(renderSettings(payload));
+
   document.getElementById('updated').textContent = 'Updated ' + new Date(payload.fetchedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  measure();
 }
 window.render = render;
+document.getElementById('gear').addEventListener('click', function () {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settings').hidden = !settingsOpen;
+  measure();
+});
 render(current);
-setInterval(function () { render(current); }, 30000);
+setInterval(function () { render(current); measure(); }, 30000);
+window.addEventListener('resize', measure);
 `
 
 export function renderPanelHtml(payload: PanelPayload): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>AI Usage</title><style>${STYLE}</style></head>
-<body><div id="root"></div><footer id="updated"></footer>
+<body><div id="root"></div>
+<footer><button id="gear" class="gear" type="button" title="Settings">Settings</button><span id="updated"></span></footer>
 <script>window.__INITIAL__ = ${scriptJson(payload)};${SCRIPT}</script></body></html>`
 }

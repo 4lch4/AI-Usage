@@ -5,7 +5,29 @@ much of your Claude and OpenCode Go/Zen usage limits you've used and when they r
 
 It shows two meters in the tray icon (Claude on top, OpenCode Go below; each shows its busiest window) and a
 summary on hover. The tray menu has **Show usage** (a popup with every window and its reset countdown),
-**Refresh now** and **Quit**. It refreshes every 5 minutes (`AI_USAGE_REFRESH_SECONDS`, minimum 60).
+**Settings…**, **Refresh now** and **Quit**. It refreshes every 5 minutes.
+
+A left-click opens the tray menu, not the popup; use **Show usage**. See
+[ADR 1](docs/adr/0001-electrobun-tray-shell.md) for why.
+
+## Settings
+
+Open the popup and click **Settings** in the footer, or pick **Settings…** from the tray menu. You can set:
+
+| Setting              | Choices                        | Default   |
+| -------------------- | ------------------------------ | --------- |
+| Refresh every        | 1, 5, 15, 30 minutes           | 5 minutes |
+| Warn me at           | 70%, 80%, 90%, 95% used        | 90%       |
+| Show in the tray     | Claude, OpenCode Go            | both      |
+
+A Provider you switch off draws no tray meter, disappears from the popup, and stops raising warnings.
+
+You get one Windows notification the first time a window reaches your threshold. It stays quiet
+after that until the window drops back below, so a Provider sitting at 95% does not notify every five
+minutes.
+
+Settings live in `%APPDATA%\AI-Usage\settings.json`. It is hand-editable: a missing, partial or
+corrupt file falls back to the defaults field by field rather than losing your tray.
 
 ## Run it
 

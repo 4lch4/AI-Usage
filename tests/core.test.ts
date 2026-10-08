@@ -11,6 +11,7 @@ import { renderTrayIcon, renderTrayPng } from '../src/core/icon.ts'
 import { renderPanelHtml, scriptJson, toPanelPayload } from '../src/core/panel.ts'
 import { positionInWorkArea, positionPanel } from '../src/core/position.ts'
 import { refreshAll } from '../src/core/refresh.ts'
+import { ALERT_CHOICES, DEFAULT_SETTINGS, REFRESH_CHOICES } from '../src/core/settings.ts'
 import { type Provider, ProviderError, type ProviderUsage } from '../src/core/types.ts'
 
 const now = new Date('2026-10-07T22:00:00Z')
@@ -123,8 +124,10 @@ describe('renderTrayIcon', () => {
     return { width, height, pixel }
   }
 
+  const slots = (...values: (number | null)[]) => values.map(value => ({ value, visible: true }))
+
   test('produces a valid 32x32 PNG with proportional, color-coded fills', () => {
-    const { width, height, pixel } = decode(renderTrayPng([100, 10]))
+    const { width, height, pixel } = decode(renderTrayPng(slots(100, 10)))
     expect([width, height]).toEqual([32, 32])
     expect(pixel(25, 8)).toEqual([248, 113, 113, 255]) // full critical bar on top
     expect(pixel(25, 22)).toEqual([148, 163, 184, 110]) // 10% bar: track on the right
@@ -133,12 +136,22 @@ describe('renderTrayIcon', () => {
   })
 
   test('draws an empty bar when there is no data', () => {
-    const { pixel } = decode(renderTrayPng([null, null]))
+    const { pixel } = decode(renderTrayPng(slots(null, null)))
     expect(pixel(4, 8)).toEqual([148, 163, 184, 110])
   })
 
+  test('draws nothing at all for a provider switched off in Settings', () => {
+    const hidden = renderTrayPng([
+      { value: 100, visible: true },
+      { value: 10, visible: false },
+    ])
+    const { pixel } = decode(hidden)
+    expect(pixel(25, 8)).toEqual([248, 113, 113, 255]) // the visible row is drawn
+    expect(pixel(25, 22)).toEqual([0, 0, 0, 0]) // ...and the hidden one is not even a track
+  })
+
   test('wraps the PNG in an ICO, which is what LoadImageW can read', () => {
-    const ico = renderTrayIcon([100, 10])
+    const ico = renderTrayIcon(slots(100, 10))
     const view = new DataView(ico.buffer, ico.byteOffset)
     expect([view.getUint16(0, true), view.getUint16(2, true), view.getUint16(4, true)]).toEqual([
       0, 1, 1,
@@ -154,18 +167,61 @@ describe('renderTrayIcon', () => {
 })
 
 describe('panel', () => {
+  const allProviders = [
+    { id: 'claude' as const, name: 'Claude' },
+    { id: 'opencode-go' as const, name: 'OpenCode Go' },
+  ]
+  const panelOptions = { settings: DEFAULT_SETTINGS, allProviders }
+
   test('payload carries levels and ISO dates', () => {
-    const [claude] = toPanelPayload([usage()], now).providers
+    const [claude] = toPanelPayload([usage()], now, panelOptions).providers
     expect(claude?.windows[0]).toMatchObject({ level: 'ok', resetsAt: '2026-10-07T23:46:00.000Z' })
     expect(claude?.windows[1]?.resetsAt).toBeNull()
   })
 
+  test('payload offers every provider, marking the hidden ones', () => {
+    const settings = { ...DEFAULT_SETTINGS, visibleProviders: ['opencode-go' as const] }
+    const payload = toPanelPayload(
+      [usage(), usage({ id: 'opencode-go', name: 'OpenCode Go' })],
+      now,
+      { settings, allProviders },
+    )
+    expect(payload.allProviders).toEqual([
+      { id: 'claude', name: 'Claude', visible: false },
+      { id: 'opencode-go', name: 'OpenCode Go', visible: true },
+    ])
+    expect(payload.providers.map(p => p.id)).toEqual(['opencode-go'])
+  })
+
+  test('payload carries the choices so the Panel does not hard-code them', () => {
+    const payload = toPanelPayload([usage()], now, panelOptions)
+    expect(payload.choices.refreshSeconds).toEqual([...REFRESH_CHOICES])
+    expect(payload.choices.alertAtPercent).toEqual([...ALERT_CHOICES])
+    expect(payload.settings).toEqual({
+      refreshSeconds: DEFAULT_SETTINGS.refreshSeconds,
+      alertAtPercent: DEFAULT_SETTINGS.alertAtPercent,
+    })
+  })
+
   test('HTML embeds the payload without allowing script injection', () => {
-    const payload = toPanelPayload([usage({ error: '</script><script>alert(1)</script>' })], now)
+    const payload = toPanelPayload(
+      [usage({ error: '</script><script>alert(1)</script>' })],
+      now,
+      panelOptions,
+    )
     const html = renderPanelHtml(payload)
     expect(html).not.toContain('</script><script>alert')
     expect(scriptJson({ a: '</script>' })).toBe('{"a":"\\u003c/script>"}')
     expect(html).toContain('window.render = render')
+  })
+
+  test('HTML reports its height and sends setting changes to the host', () => {
+    const html = renderPanelHtml(toPanelPayload([usage()], now, panelOptions))
+    expect(html).toContain('__electrobunSendToHost')
+    expect(html).toContain("type: 'height'")
+    expect(html).toContain("type: 'providerVisibility'")
+    // The Settings section starts hidden unless the user came from the tray's Settings item.
+    expect(html).toContain('id="gear"')
   })
 })
 

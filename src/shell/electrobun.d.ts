@@ -24,6 +24,19 @@ declare module 'electrobun/main' {
     getPrimaryDisplay(): Display
   }
 
+  export interface NotificationOptions {
+    title: string
+    body?: string
+    subtitle?: string
+    silent?: boolean
+  }
+
+  export const Utils: {
+    /** `%APPDATA%` on Windows. Settings live in a `settings.json` under it. */
+    paths: { config: string; appData: string; temp: string }
+    showNotification(options: NotificationOptions): void
+  }
+
   export class Tray {
     constructor(options: {
       title?: string
@@ -47,9 +60,14 @@ declare module 'electrobun/main' {
       frame?: Partial<Rectangle> & { width: number; height: number }
       titleBarStyle?: 'default' | 'hidden' | 'hiddenInset'
     })
-    readonly webview: { executeJavascript(code: string): void }
+    readonly webview: {
+      executeJavascript(code: string): void
+      /** `__electrobunSendToHost` in the page arrives here. */
+      on(event: 'host-message', handler: (event: unknown) => void): void
+    }
     on(event: string, handler: (event: unknown) => void): void
     setFrame(x: number, y: number, width: number, height: number): void
+    setSize(width: number, height: number): void
     setAlwaysOnTop(value: boolean): void
     center(): void
     show(): void
