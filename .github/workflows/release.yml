@@ -1,0 +1,88 @@
+name: Release
+
+# Builds the Windows app and attaches it to the GitHub Release that release-please
+# created. Merging the release PR is what triggers this: release-please pushes the
+# tag, and the tag push lands here.
+#
+# Requires secrets.RELEASE_PLEASE_TOKEN (a PAT, not GITHUB_TOKEN) in the
+# release-please workflow. Tags created with GITHUB_TOKEN do not trigger workflows,
+# so nothing would be published and the failure would be silent.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows
+    runs-on: windows-2025
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Verify tag matches the manifest version
+        shell: pwsh
+        run: |
+          $expected = (Get-Content .release-please-manifest.json -Raw | ConvertFrom-Json).'.'
+          $tag = $env:GITHUB_REF_NAME.TrimStart('v')
+          if ($tag -ne $expected) {
+            throw "Tag v$tag does not match the manifest version $expected"
+          }
+          "Tag v$tag matches the manifest"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint, typecheck and test
+        run: bun run check; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; bun run typecheck; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; bun test
+
+      # The .exe is unsigned, so Windows SmartScreen warns on first run and the user has to
+      # click "More info" then "Run anyway". That is the accepted trade-off for a personal
+      # app with no code-signing certificate.
+      - name: Build
+        run: bun run build
+
+      - name: Show build output
+        run: Get-ChildItem build -Recurse -Depth 2 | Select-Object FullName
+
+      - name: Stage app bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: ai-usage-windows
+          path: build/stable-win-x64/*
+          if-no-files-found: error
+
+  release:
+    name: Attach to release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download app bundle
+        uses: actions/download-artifact@v7
+        with:
+          name: ai-usage-windows
+          path: dist
+
+      - name: List artifacts
+        run: ls -la dist
+
+      - name: Zip the app folder
+        run: |
+          cd dist
+          folder="$(find . -maxdepth 1 -mindepth 1 -type d -not -name '.*' | head -1)"
+          zip -r "AI-Usage-${{ github.ref_name }}-win-x64.zip" "$folder"
+          ls -la
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" dist/*.zip --clobber

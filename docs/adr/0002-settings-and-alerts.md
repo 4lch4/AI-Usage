@@ -56,9 +56,10 @@ it is covered by tests rather than discovered on Windows.
   reports itself instead of presenting dead controls.
 - **A notification's Windows title says "Bun" under `bun run dev`.** That label is not ours.
   Electrobun raises the notification as a `Shell_NotifyIcon` balloon and registers no
-  AppUserModelID, so Windows names it after the host executable, which is `bun.exe` in development.
-  The Alert's own title and body are correct. A packaged build should show the app name; that is
-  worth confirming during packaging rather than assuming.
+  AppUserModelID, so Windows falls back to naming the notification after the host process, and the
+  process running the app code is `bun.exe` in development. The Alert's own title and body are
+  correct. A packaged build runs the same Bun runtime, so whether this changes is unknown and should
+  be checked rather than assumed.
 - The saved file is a public interface. Renaming a Setting silently resets it to the default, and a
   user edit that is merely the wrong type degrades one field rather than the whole file.
 - The interval choices and the alert thresholds are defined in `settings.ts` and shipped to the Panel
