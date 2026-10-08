@@ -54,6 +54,11 @@ it is covered by tests rather than discovered on Windows.
   already-tested functions.
 - The Panel shows an explicit warning when `__electrobunSendToHost` is missing, so a broken bridge
   reports itself instead of presenting dead controls.
+- **A notification's Windows title says "Bun" under `bun run dev`.** That label is not ours.
+  Electrobun raises the notification as a `Shell_NotifyIcon` balloon and registers no
+  AppUserModelID, so Windows names it after the host executable, which is `bun.exe` in development.
+  The Alert's own title and body are correct. A packaged build should show the app name; that is
+  worth confirming during packaging rather than assuming.
 - The saved file is a public interface. Renaming a Setting silently resets it to the default, and a
   user edit that is merely the wrong type degrades one field rather than the whole file.
 - The interval choices and the alert thresholds are defined in `settings.ts` and shipped to the Panel
