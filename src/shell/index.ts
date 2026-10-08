@@ -1,7 +1,7 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BrowserWindow, Tray } from 'electrobun/main'
+import { BrowserWindow, Screen, Tray } from 'electrobun/main'
 import { formatTooltip, worstPercent } from '../core/format.ts'
 import { renderTrayIcon } from '../core/icon.ts'
 import {
@@ -11,7 +11,7 @@ import {
   scriptJson,
   toPanelPayload,
 } from '../core/panel.ts'
-import { positionPanel } from '../core/position.ts'
+import { positionInWorkArea, positionPanel } from '../core/position.ts'
 import { createClaudeProvider } from '../core/providers/claude.ts'
 import { createOpenCodeGoProvider } from '../core/providers/opencode-go.ts'
 import { refreshAll } from '../core/refresh.ts'
@@ -19,8 +19,6 @@ import type { ProviderId, ProviderUsage } from '../core/types.ts'
 
 const REFRESH_MS = Math.max(60, Number(process.env.AI_USAGE_REFRESH_SECONDS) || 300) * 1000
 // Used only to keep the panel on screen; Windows hands the tray icon's bounds in logical pixels.
-const SCREEN = { width: 3840, height: 2160 }
-
 const providers = [createClaudeProvider(), createOpenCodeGoProvider()]
 const iconDir = join(tmpdir(), 'ai-usage')
 
@@ -91,10 +89,19 @@ function pushToPanel(): void {
   )
 }
 
-function placePanel(window: BrowserWindow): void {
-  const spot = positionPanel(tray.getBounds(), { width: PANEL_WIDTH, height: PANEL_HEIGHT }, SCREEN)
-  if (spot) window.setFrame(spot.x, spot.y, PANEL_WIDTH, PANEL_HEIGHT)
-  else window.center()
+/**
+ * Where the Panel goes, in logical pixels.
+ *
+ * `tray.getBounds()` is a stub on Windows and reports a zero rectangle, so anchoring to the icon is
+ * not possible there yet. The work area is what is left after the taskbar, which is where the tray
+ * lives: its bottom-right corner is the notification area on a taskbar that is bottom-aligned.
+ * `positionPanel` still prefers real icon bounds wherever they are reported.
+ */
+function panelSpot(): { x: number; y: number } | null {
+  const size = { width: PANEL_WIDTH, height: PANEL_HEIGHT }
+  const anchored = positionPanel(tray.getBounds(), size, Screen.getPrimaryDisplay().bounds)
+  if (anchored) return anchored
+  return positionInWorkArea(size, Screen.getPrimaryDisplay().workArea)
 }
 
 function togglePanel(): void {
@@ -104,11 +111,7 @@ function togglePanel(): void {
     return
   }
   if (!panel) {
-    const spot = positionPanel(
-      tray.getBounds(),
-      { width: PANEL_WIDTH, height: PANEL_HEIGHT },
-      SCREEN,
-    )
+    const spot = panelSpot()
     panel = new BrowserWindow({
       title: 'AI Usage',
       html: renderPanelHtml(toPanelPayload(results, new Date())),
@@ -126,7 +129,9 @@ function togglePanel(): void {
     })
     if (!spot) panel.center()
   } else {
-    placePanel(panel)
+    // Re-anchor each time: the taskbar or the icon may have moved since the Panel was created.
+    const spot = panelSpot()
+    if (spot) panel.setFrame(spot.x, spot.y, PANEL_WIDTH, PANEL_HEIGHT)
     pushToPanel()
     panel.show()
   }

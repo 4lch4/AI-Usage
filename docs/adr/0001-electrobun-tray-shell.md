@@ -20,12 +20,19 @@ Reading the SDK and the Windows native wrapper settles four questions the shell 
 - `Tray.on('tray-clicked')` and `BrowserWindow.on('blur')` / `on('close')` are real events.
 - `setImage` takes an absolute path; `Tray.resolveImagePath` only rewrites `views://` URLs.
 - **`getTrayBounds` is a stub on Windows.** It returns `{x:0,y:0,width:0,height:0}`, so
-  `positionPanel` always returns null there and the Panel is centered rather than anchored to the
-  icon. Placement is therefore correct in principle but unproven on the target OS.
+  `positionPanel` always returns null there. The Panel is placed against the bottom-right of
+  `Screen.getPrimaryDisplay().workArea` instead, which is where the notification area sits on a
+  bottom-aligned taskbar. Real icon bounds are still preferred wherever they are reported.
 - **A left-click on the tray opens the context Menu, not the Panel.** Once `setMenu` is installed the
   Windows wrapper routes both `WM_LBUTTONUP` and `WM_RBUTTONUP` to `TrackPopupMenu`, and the
   empty-action `tray-clicked` the shell treats as "toggle Panel" only arrives when no Menu exists.
-  Opening the Panel from a left-click is not available with a Menu attached.
+- **Which button was pressed is not reported at all.** `WM_LBUTTONUP` and `WM_RBUTTONUP` share one
+  `case` with an empty body, so the button identity never reaches JS. A separate `handleTrayIconMessage`
+  in the same file does distinguish them, but nothing calls it. Left-click-to-open and
+  right-click-for-menu therefore cannot both be had; only one of the two behaviors is available.
+- **The tray icon must be an `.ico`, not a `.png`.** Windows loads it with
+  `LoadImageW(LR_LOADFROMFILE)`, which reads `.bmp`, `.ico`, `.cur` and `.ani` but not `.png`. A PNG
+  fails to load, Electrobun logs it, and the tray shows the generic application icon.
 
 ## Decision
 
@@ -45,5 +52,7 @@ The popup is a single HTML string rendered by `src/core/panel.ts` and refreshed 
   rewriting one file; Tauri is the fallback.
 - The shell itself is only verified by running it on Windows.
 - The Panel opens from the **Show usage** Menu item rather than a left-click, because installing a
-  Menu takes over left-click on Windows. Worth revisiting if Electrobun exposes the icon's bounds
-  for real, which would also let the Panel be anchored to the icon.
+  Menu takes over left-click on Windows and the button is not reported separately. Dropping the Menu
+  would give left-click-to-open, at the cost of losing Refresh and Quit from the tray.
+- The icon is written as an ICO wrapping a PNG. `renderTrayIcon` returns the ICO;
+  `renderTrayPng` is the bare PNG the tests decode.

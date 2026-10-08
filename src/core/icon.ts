@@ -59,10 +59,42 @@ export function encodePng(width: number, height: number, rgba: Uint8Array): Uint
 }
 
 /**
+ * Wraps a PNG in a single-image ICO container.
+ *
+ * The Windows tray loads the icon with `LoadImageW(LR_LOADFROMFILE)`, which reads `.bmp`, `.ico`,
+ * `.cur` and `.ani` but not `.png`. Handing it a PNG fails silently and Windows draws its generic
+ * application icon instead. An ICO whose one entry holds PNG bytes is what Vista and later expect,
+ * and still gives us the alpha channel a flat BMP could not.
+ */
+export function encodeIco(png: Uint8Array, size: number): Uint8Array {
+  const HEADER = 22 // ICONDIR (6) + one ICONDIRENTRY (16)
+  const ico = new Uint8Array(HEADER + png.length)
+  const view = new DataView(ico.buffer)
+  view.setUint16(0, 0, true) // reserved
+  view.setUint16(2, 1, true) // type 1: icon
+  view.setUint16(4, 1, true) // one image
+  ico[6] = size >= 256 ? 0 : size // 0 means 256 in the on-disk format
+  ico[7] = size >= 256 ? 0 : size
+  ico[8] = 0 // palette size
+  ico[9] = 0 // reserved
+  view.setUint16(10, 1, true) // colour planes
+  view.setUint16(12, 32, true) // bits per pixel
+  view.setUint32(14, png.length, true)
+  view.setUint32(18, HEADER, true)
+  ico.set(png, HEADER)
+  return ico
+}
+
+/**
  * Draws one meter bar per value, stacked: top is Claude, bottom is OpenCode Go.
  * `null` means no data yet and draws a dim, empty bar.
  */
 export function renderTrayIcon(values: [number | null, number | null]): Uint8Array {
+  return encodeIco(renderTrayPng(values), SIZE)
+}
+
+/** The same meters as {@link renderTrayIcon}, as bare PNG bytes. */
+export function renderTrayPng(values: [number | null, number | null]): Uint8Array {
   const rgba = new Uint8Array(SIZE * SIZE * 4)
   const barX = 3
   const barWidth = SIZE - barX * 2

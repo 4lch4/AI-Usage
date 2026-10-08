@@ -26,3 +26,19 @@ export function positionPanel(
     y: Math.max(0, Math.min(y, screen.height - size.height)),
   }
 }
+
+/**
+ * Places the popup against the bottom-right of the work area (the screen minus the taskbar), which is
+ * where the tray's notification area sits on a bottom-aligned taskbar. This is the fallback for when
+ * the tray reports no icon bounds, as Electrobun does on Windows.
+ */
+export function positionInWorkArea(
+  size: { width: number; height: number },
+  workArea: Rect,
+): { x: number; y: number } | null {
+  if (workArea.width <= 0 || workArea.height <= 0) return null
+  return {
+    x: Math.round(workArea.x + workArea.width - size.width - GAP),
+    y: Math.round(workArea.y + workArea.height - size.height - GAP),
+  }
+}

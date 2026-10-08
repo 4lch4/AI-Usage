@@ -12,6 +12,18 @@ declare module 'electrobun/main' {
     | { type: 'normal'; label: string; action: string; enabled?: boolean }
     | { type: 'separator' }
 
+  export interface Display {
+    bounds: Rectangle
+    workArea: Rectangle
+    scaleFactor: number
+    isPrimary: boolean
+  }
+
+  export const Screen: {
+    /** Real monitor geometry, unlike the stubbed `Tray.getBounds` on Windows. */
+    getPrimaryDisplay(): Display
+  }
+
   export class Tray {
     constructor(options: {
       title?: string

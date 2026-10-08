@@ -7,9 +7,9 @@ import {
   levelFor,
   worstPercent,
 } from '../src/core/format.ts'
-import { renderTrayIcon } from '../src/core/icon.ts'
+import { renderTrayIcon, renderTrayPng } from '../src/core/icon.ts'
 import { renderPanelHtml, scriptJson, toPanelPayload } from '../src/core/panel.ts'
-import { positionPanel } from '../src/core/position.ts'
+import { positionInWorkArea, positionPanel } from '../src/core/position.ts'
 import { refreshAll } from '../src/core/refresh.ts'
 import { type Provider, ProviderError, type ProviderUsage } from '../src/core/types.ts'
 
@@ -124,7 +124,7 @@ describe('renderTrayIcon', () => {
   }
 
   test('produces a valid 32x32 PNG with proportional, color-coded fills', () => {
-    const { width, height, pixel } = decode(renderTrayIcon([100, 10]))
+    const { width, height, pixel } = decode(renderTrayPng([100, 10]))
     expect([width, height]).toEqual([32, 32])
     expect(pixel(25, 8)).toEqual([248, 113, 113, 255]) // full critical bar on top
     expect(pixel(25, 22)).toEqual([148, 163, 184, 110]) // 10% bar: track on the right
@@ -133,8 +133,23 @@ describe('renderTrayIcon', () => {
   })
 
   test('draws an empty bar when there is no data', () => {
-    const { pixel } = decode(renderTrayIcon([null, null]))
+    const { pixel } = decode(renderTrayPng([null, null]))
     expect(pixel(4, 8)).toEqual([148, 163, 184, 110])
+  })
+
+  test('wraps the PNG in an ICO, which is what LoadImageW can read', () => {
+    const ico = renderTrayIcon([100, 10])
+    const view = new DataView(ico.buffer, ico.byteOffset)
+    expect([view.getUint16(0, true), view.getUint16(2, true), view.getUint16(4, true)]).toEqual([
+      0, 1, 1,
+    ])
+    expect([ico[6], ico[7]]).toEqual([32, 32]) // width, height
+    expect(view.getUint32(14, true)).toBe(ico.length - 22) // payload size
+    expect(view.getUint32(18, true)).toBe(22) // payload offset
+    // The payload is the PNG itself, signature and all.
+    const png = ico.subarray(22)
+    expect(Array.from(png.subarray(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    expect(decode(png).pixel(25, 8)).toEqual([248, 113, 113, 255])
   })
 })
 
@@ -175,5 +190,23 @@ describe('positionPanel', () => {
 
   test('returns null for unknown bounds', () => {
     expect(positionPanel({ x: 0, y: 0, width: 0, height: 0 }, size, screen)).toBeNull()
+  })
+
+  // The fallback for platforms where the tray reports no bounds.
+  const workArea = { x: 0, y: 0, width: 1920, height: 1040 }
+
+  test('parks the panel at the bottom-right of the work area', () => {
+    expect(positionInWorkArea(size, workArea)).toEqual({ x: 1592, y: 732 })
+  })
+
+  test('offsets the panel when the taskbar is on the left of a second monitor', () => {
+    expect(positionInWorkArea(size, { x: 1920, y: 0, width: 2560, height: 1400 })).toEqual({
+      x: 4152,
+      y: 1092,
+    })
+  })
+
+  test('returns null for an unknown work area', () => {
+    expect(positionInWorkArea(size, { x: 0, y: 0, width: 0, height: 0 })).toBeNull()
   })
 })
