@@ -51,11 +51,14 @@ jobs:
       - name: Show build output
         run: Get-ChildItem build -Recurse -Depth 2 | Select-Object FullName
 
-      - name: Stage app bundle
+      # The installer is the only thing a user needs. The build directory also holds the ~33 MB
+      # `AIUsage/` payload and a duplicate of it as `AI Usage-Setup.tar.zst`; both are what the
+      # installer unpacks, so shipping them adds tens of megabytes to the release for nothing.
+      - name: Stage the installer
         uses: actions/upload-artifact@v6
         with:
-          name: ai-usage-windows
-          path: build/stable-win-x64/*
+          name: ai-usage-installer
+          path: build/stable-win-x64/AI Usage-Setup.exe
           if-no-files-found: error
 
   release:
@@ -66,23 +69,18 @@ jobs:
       contents: write
 
     steps:
-      - name: Download app bundle
+      - name: Download the installer
         uses: actions/download-artifact@v7
         with:
-          name: ai-usage-windows
+          name: ai-usage-installer
           path: dist
 
-      - name: List artifacts
-        run: ls -la dist
-
-      - name: Zip the app folder
-        run: |
-          cd dist
-          folder="$(find . -maxdepth 1 -mindepth 1 -type d -not -name '.*' | head -1)"
-          zip -r "AI-Usage-${{ github.ref_name }}-win-x64.zip" "$folder"
-          ls -la
+      - name: Rename for the release
+        run: mv "dist/AI Usage-Setup.exe" "dist/AI-Usage-${{ github.ref_name }}-win-x64-setup.exe"
 
       - name: Upload to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" dist/*.zip --clobber
+        run: |
+          ls -la dist
+          gh release upload "${{ github.ref_name }}" dist/*.exe --clobber

@@ -41,7 +41,16 @@ const configDir = Utils.paths.config
  * app on every login.
  */
 const isPackaged = BuildConfig.getSync().isPackaged
-const launcherPath = process.execPath
+/**
+ * The launcher in the installed app, which is what Windows must run at login.
+ *
+ * Not `process.execPath`: the launcher spawns the Bun runtime as a child, so inside this process
+ * that is `bin/bun.exe`, and running it at login would start Bun with no script. The install root is
+ * `%LOCALAPPDATA%\<identifier>\<channel>` and the app lives under its `app` folder. `userData`
+ * already resolves that root, honouring `ELECTROBUN_INSTALL_ROOT_NAME` for a custom install
+ * directory.
+ */
+const launcherPath = join(Utils.paths.userData, 'app', 'bin', 'launcher.exe')
 
 let settings: Settings = { ...DEFAULT_SETTINGS }
 let results: ProviderUsage[] = []

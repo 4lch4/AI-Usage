@@ -33,11 +33,15 @@ be published — a silent failure, which is why it is called out in a comment th
 
 ## Consequences
 
-- A release is: merge to `main`, merge the release PR, download the zip, unzip, run `launcher.exe`.
-  There is no installer and no Start Menu entry; the app is a portable folder.
-- Autostart points the `Run` entry at that folder's `launcher.exe`, so **moving the folder breaks
-  autostart**. This is why the app reads the registry on startup and drops its own stale entry rather
-  than launching whatever now occupies the old path.
+- A release is: merge to `main`, merge the release PR, download `AI Usage-<tag>-win-x64-setup.exe`,
+  run it. The installer unpacks the app to `%LOCALAPPDATA%\<identifier>\<channel>` and writes Start
+  Menu and Desktop shortcuts, which it also knows how to uninstall.
+- Only the installer is attached to the release. `bun run build` also emits the `AIUsage/` payload and
+  a duplicate of it as a ~33 MB `tar.zst`; both are what the installer unpacks, so shipping them would
+  add tens of megabytes to every release for nothing.
+- Autostart points the `Run` entry at `<install root>\app\bin\launcher.exe`. It is **not**
+  `process.execPath`: the launcher spawns the Bun runtime as a child, so inside the app that is
+  `bun.exe`, and running it at login would start Bun with no script.
 - An unsigned build cannot be distributed to other machines smoothly, and no auto-update is offered.
 - The notification's Windows title still needs checking in a packaged build: the toast is a
   `Shell_NotifyIcon` balloon with no AppUserModelID, so Windows names it after the host process.

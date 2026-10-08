@@ -63,6 +63,15 @@ didn't inherit it.
 The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
 [ADR 1](docs/adr/0001-electrobun-tray-shell.md).
 
+## Install
+
+Download the latest `AI-Usage-<version>-win-x64-setup.exe` from the
+[releases page](https://github.com/4lch4/AI-Usage/releases), run it, and the app installs to
+`%LOCALAPPDATA%\com.4lch4.ai-usage` with Start Menu and Desktop shortcuts.
+
+It is **not code-signed**, so SmartScreen will warn the first time. Click **More info** →
+**Run anyway**.
+
 ## PowerShell probe
 
 ```powershell

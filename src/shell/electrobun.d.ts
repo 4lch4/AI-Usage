@@ -37,7 +37,13 @@ declare module 'electrobun/main' {
 
   export const Utils: {
     /** `%APPDATA%` on Windows. Settings live in a `settings.json` under it. */
-    paths: { config: string; appData: string; temp: string }
+    paths: {
+      config: string
+      appData: string
+      temp: string
+      /** The installed app root, e.g. `%LOCALAPPDATA%\<identifier>\<channel>`. */
+      userData: string
+    }
     showNotification(options: NotificationOptions): void
   }
 
