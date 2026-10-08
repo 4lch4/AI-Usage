@@ -1,10 +1,16 @@
 export type RunCommand = (cmd: string[]) => Promise<{ exitCode: number; stdout: string }>
 
-const runWithBun: RunCommand = async cmd => {
+/**
+ * Runs a command and captures its output. Exported so other modules can shell out with the same
+ * spawn behaviour and stay testable by injecting a fake.
+ */
+export const runReg: RunCommand = async cmd => {
   const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'ignore' })
   const stdout = await new Response(proc.stdout).text()
   return { exitCode: await proc.exited, stdout }
 }
+
+const runWithBun: RunCommand = runReg
 
 /**
  * Pulls the value out of `reg query HKCU\Environment /v NAME` output, which looks like

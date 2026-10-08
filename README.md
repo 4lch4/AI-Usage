@@ -19,6 +19,12 @@ Open the popup and click **Settings** in the footer, or pick **Settings…** fro
 | Refresh every        | 1, 5, 15, 30 minutes           | 5 minutes |
 | Warn me at           | 70%, 80%, 90%, 95% used        | 90%       |
 | Show in the tray     | Claude, OpenCode Go            | both      |
+| Start with Windows  | on / off                       | off       |
+
+Autostart writes a `HKCU\...\CurrentVersion\Run` entry pointing at the app's `launcher.exe`, so it
+needs no administrator rights and shows up in Task Manager's **Startup** tab where you can turn it off
+without the app. It is only offered in a packaged build: `bun run dev` is a Hutch watch session, and a
+Run entry pointing at it would reload the app at every login.
 
 A Provider you switch off draws no tray meter, disappears from the popup, and stops raising warnings.
 

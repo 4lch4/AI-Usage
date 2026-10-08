@@ -185,6 +185,18 @@ describe('parsePanelMessage', () => {
     expect(parsePanelMessage(JSON.stringify(settingsMessage))).toEqual(settingsMessage)
   })
 
+  test('reads an autostart toggle', () => {
+    expect(parsePanelMessage({ type: 'autostart', enabled: true })).toEqual({
+      type: 'autostart',
+      enabled: true,
+    })
+    // Anything other than a literal true is off; the checkbox must not read as on by accident.
+    expect(parsePanelMessage({ type: 'autostart', enabled: 'yes' })).toEqual({
+      type: 'autostart',
+      enabled: false,
+    })
+  })
+
   test('reads a provider toggle', () => {
     expect(parsePanelMessage({ type: 'providerVisibility', id: 'claude', visible: false })).toEqual(
       {
@@ -253,7 +265,14 @@ describe('panel', () => {
     expect(payload.settings).toEqual({
       refreshSeconds: DEFAULT_SETTINGS.refreshSeconds,
       alertAtPercent: DEFAULT_SETTINGS.alertAtPercent,
+      autostart: DEFAULT_SETTINGS.autostart,
     })
+    expect(payload.autostartAvailable).toBe(false)
+  })
+
+  test('reports autostart as available only when the caller says so', () => {
+    const payload = toPanelPayload([usage()], now, { ...panelOptions, autostartAvailable: true })
+    expect(payload.autostartAvailable).toBe(true)
   })
 
   test('a hand-edited threshold is offered so the dropdown does not lie', () => {

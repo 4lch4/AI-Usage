@@ -66,5 +66,7 @@ it is covered by tests rather than discovered on Windows.
   in the payload, so the two dropdowns cannot drift from the values the code accepts.
 - Only the refresh interval restarts the timer. Toggling a Provider rewrites the icon, tooltip and
   Panel, which is cheap and immediate.
-- Autostart was deliberately deferred: registering a startup entry needs a stable command to launch,
-  and there is no packaged executable yet. It belongs with the packaging work so it can be verified.
+- Autostart is offered only in a packaged build, because `bun run dev` is a Hutch watch session and a
+  Run entry pointing at it would reload the app at every login. It is implemented in
+  `src/core/autostart.ts` and covered by tests; see [ADR 3](0003-release-and-packaging.md) for the
+  packaging it depends on.

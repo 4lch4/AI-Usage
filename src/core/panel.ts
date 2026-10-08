@@ -13,7 +13,9 @@ export interface PanelPayload {
   fetchedAt: string
   /** Which Providers the Panel can switch on and off. Ordered, so the list is stable. */
   allProviders: { id: string; name: string; visible: boolean }[]
-  settings: { refreshSeconds: number; alertAtPercent: number }
+  settings: { refreshSeconds: number; alertAtPercent: number; autostart: boolean }
+  /** False in a dev build, where there is nothing stable to launch at login. */
+  autostartAvailable: boolean
   /** Which interval options and thresholds to offer, so the choices live in `settings.ts`. */
   choices: { refreshSeconds: number[]; alertAtPercent: number[] }
   /** Open with the Settings section showing, because the user asked for it from the tray. */
@@ -37,6 +39,8 @@ export function toPanelPayload(
   options: {
     settings: Settings
     allProviders: readonly { id: ProviderId; name: string }[]
+    /** False in a dev build, where there is nothing stable to launch at login. */
+    autostartAvailable?: boolean
     openSettings?: boolean
   },
 ): PanelPayload {
@@ -61,7 +65,9 @@ export function toPanelPayload(
     settings: {
       refreshSeconds: options.settings.refreshSeconds,
       alertAtPercent: options.settings.alertAtPercent,
+      autostart: options.settings.autostart,
     },
+    autostartAvailable: options.autostartAvailable ?? false,
     choices: {
       refreshSeconds: choicesWithCurrent(REFRESH_CHOICES, options.settings.refreshSeconds),
       alertAtPercent: choicesWithCurrent(ALERT_CHOICES, options.settings.alertAtPercent),
@@ -178,6 +184,21 @@ function renderSettings(payload) {
   });
   box.appendChild(field('Warn me at', alertAt));
 
+  var startLabel = el('label', 'check');
+  var startBox = el('input');
+  startBox.type = 'checkbox';
+  startBox.checked = payload.settings.autostart;
+  startBox.disabled = !payload.autostartAvailable;
+  startBox.addEventListener('change', function () {
+    send({ type: 'autostart', enabled: startBox.checked });
+  });
+  startLabel.appendChild(startBox);
+  startLabel.appendChild(el('span', '', 'Start with Windows'));
+  box.appendChild(startLabel);
+  if (!payload.autostartAvailable) {
+    box.appendChild(el('div', 'note', 'Not available in a dev build; it needs the packaged app.'));
+  }
+
   var group = el('div', 'providers');
   group.appendChild(el('div', 'note', 'Show in the tray'));
   payload.allProviders.forEach(function (p) {
@@ -252,6 +273,7 @@ setInterval(function () { render(current); }, 30000);
 export type PanelMessage =
   | { type: 'settings'; patch: Partial<Settings> }
   | { type: 'providerVisibility'; id: ProviderId; visible: boolean }
+  | { type: 'autostart'; enabled: boolean }
 
 /**
  * Reads a message the Panel sent with `__electrobunSendToHost`.
@@ -282,6 +304,9 @@ export function parsePanelMessage(detail: unknown): PanelMessage | null {
     const id = record.id
     if (id !== 'claude' && id !== 'opencode-go') return null
     return { type: 'providerVisibility', id, visible: Boolean(record.visible) }
+  }
+  if (record.type === 'autostart') {
+    return { type: 'autostart', enabled: record.enabled === true }
   }
   return null
 }

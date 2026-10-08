@@ -10,6 +10,12 @@ export interface Settings {
   visibleProviders: ProviderId[]
   /** Used percent at which a Window counts as near its limit. */
   alertAtPercent: number
+  /**
+   * Start with Windows. Ignored in a dev build, where there is nothing stable to launch: `bun run
+   * dev` is a Hutch watch session, and a Run entry pointing at it would run a reloading process at
+   * every login. Reported in the Panel as unavailable there. See ADR 3.
+   */
+  autostart: boolean
 }
 
 /** Offered in the Panel's Settings section. */
@@ -24,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   refreshSeconds: 300,
   visibleProviders: ['claude', 'opencode-go'],
   alertAtPercent: 90,
+  autostart: false,
 }
 
 const ALL_PROVIDERS: readonly ProviderId[] = ['claude', 'opencode-go']
@@ -57,6 +64,8 @@ export function parseSettings(raw: unknown): Settings {
     ),
     visibleProviders: parseVisible(record.visibleProviders),
     alertAtPercent: clampNumber(record.alertAtPercent, 1, 100, DEFAULT_SETTINGS.alertAtPercent),
+    // Only ever true from a file we wrote ourselves.
+    autostart: record.autostart === true,
   }
 }
 

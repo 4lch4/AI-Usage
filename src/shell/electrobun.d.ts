@@ -31,6 +31,10 @@ declare module 'electrobun/main' {
     silent?: boolean
   }
 
+  export const BuildConfig: {
+    getSync(): { isPackaged: boolean; channel: string; defaultRenderer: 'native' | 'cef' }
+  }
+
   export const Utils: {
     /** `%APPDATA%` on Windows. Settings live in a `settings.json` under it. */
     paths: { config: string; appData: string; temp: string }

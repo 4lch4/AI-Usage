@@ -1,8 +1,9 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BrowserWindow, Screen, Tray, Utils } from 'electrobun/main'
+import { BrowserWindow, BuildConfig, Screen, Tray, Utils } from 'electrobun/main'
 import { type Alert, describeAlert, detectAlerts } from '../core/alert.ts'
+import { applyAutostart, readAutostart } from '../core/autostart.ts'
 import { formatTooltip, worstPercent } from '../core/format.ts'
 import { type IconSlot, renderTrayIcon } from '../core/icon.ts'
 import {
@@ -33,6 +34,15 @@ const PROVIDER_ORDER = providers.map(p => p.id)
 const iconDir = join(tmpdir(), 'ai-usage')
 const configDir = Utils.paths.config
 
+/**
+ * Autostart needs a command that still works at login. `bun run dev` does not qualify: it is a
+ * Hutch watch session, and the launcher is only the thing to point at in a packaged build, where
+ * Electrobun spawns it with CREATE_NO_WINDOW. Refusing in dev keeps a Run entry from reloading the
+ * app on every login.
+ */
+const isPackaged = BuildConfig.getSync().isPackaged
+const launcherPath = process.execPath
+
 let settings: Settings = { ...DEFAULT_SETTINGS }
 let results: ProviderUsage[] = []
 let panel: BrowserWindow | undefined
@@ -47,6 +57,26 @@ let alerted = new Set<string>()
 // current settings, so loading them afterwards draws the default providers for a frame and then
 // redraws: a Provider switched off flickers into existence on every launch.
 settings = await loadSettings({ configDir })
+
+if (isPackaged) {
+  // The registry is the truth: an entry can survive the app being moved or the folder being deleted.
+  const state = await readAutostart(launcherPath)
+  if (state.stale && !settings.autostart) {
+    // Ours, but pointing at an old path. Drop it rather than launching something else at login.
+    try {
+      await applyAutostart(false, launcherPath)
+    } catch (error) {
+      console.error('Could not remove a stale autostart entry:', error)
+    }
+  } else if (state.enabled !== settings.autostart) {
+    settings = { ...settings, autostart: state.enabled }
+    try {
+      await saveSettings(settings, { configDir })
+    } catch (error) {
+      console.error('Could not save settings:', error)
+    }
+  }
+}
 
 const tray = new Tray({
   title: 'AI Usage: loading…',
@@ -100,6 +130,7 @@ function panelPayload() {
       id,
       name: providers[index]?.name ?? id,
     })),
+    autostartAvailable: isPackaged,
     openSettings: openWithSettings,
   })
 }
@@ -215,6 +246,10 @@ function togglePanel(): void {
 function onHostMessage(detail: unknown): void {
   const message = parsePanelMessage(detail)
   if (!message) return
+  if (message.type === 'autostart') {
+    void setAutostart(message.enabled)
+    return
+  }
   if (message.type === 'providerVisibility') {
     const { id, visible } = message
     const next = PROVIDER_ORDER.filter(p => (p === id ? visible : isVisible(settings, p)))
@@ -227,6 +262,19 @@ function onHostMessage(detail: unknown): void {
 function restartTimer(): void {
   if (timer) clearInterval(timer)
   timer = setInterval(() => void refresh(), settings.refreshSeconds * 1000)
+}
+
+async function setAutostart(enabled: boolean): Promise<void> {
+  if (!isPackaged) return
+  try {
+    await applyAutostart(enabled, launcherPath)
+  } catch (error) {
+    // Report rather than leave the checkbox lying: a failed write means autostart is still off.
+    console.error('Could not change autostart:', error)
+    pushToPanel()
+    return
+  }
+  await applySettings(mergeSettings(settings, { autostart: enabled }))
 }
 
 async function applySettings(next: Settings): Promise<void> {
