@@ -8,7 +8,13 @@ import {
   worstPercent,
 } from '../src/core/format.ts'
 import { renderTrayIcon, renderTrayPng } from '../src/core/icon.ts'
-import { renderPanelHtml, scriptJson, toPanelPayload } from '../src/core/panel.ts'
+import {
+  PANEL_HEIGHT,
+  parsePanelMessage,
+  renderPanelHtml,
+  scriptJson,
+  toPanelPayload,
+} from '../src/core/panel.ts'
 import { positionInWorkArea, positionPanel } from '../src/core/position.ts'
 import { refreshAll } from '../src/core/refresh.ts'
 import { ALERT_CHOICES, DEFAULT_SETTINGS, REFRESH_CHOICES } from '../src/core/settings.ts'
@@ -166,6 +172,38 @@ describe('renderTrayIcon', () => {
   })
 })
 
+describe('parsePanelMessage', () => {
+  const settingsMessage = { type: 'settings', patch: { refreshSeconds: 900 } } as const
+
+  test('reads a message Electrobun already decoded for us', () => {
+    // This is the shape that actually arrives: the page stringifies, then Electrobun parses again.
+    expect(parsePanelMessage(settingsMessage)).toEqual(settingsMessage)
+  })
+
+  test('also reads the raw string, in case that ever changes', () => {
+    expect(parsePanelMessage(JSON.stringify(settingsMessage))).toEqual(settingsMessage)
+  })
+
+  test('reads a provider toggle', () => {
+    expect(parsePanelMessage({ type: 'providerVisibility', id: 'claude', visible: false })).toEqual(
+      {
+        type: 'providerVisibility',
+        id: 'claude',
+        visible: false,
+      },
+    )
+  })
+
+  test('rejects anything it cannot trust', () => {
+    expect(parsePanelMessage('{ not json')).toBeNull()
+    expect(parsePanelMessage(null)).toBeNull()
+    expect(parsePanelMessage(42)).toBeNull()
+    expect(parsePanelMessage({ type: 'quit' })).toBeNull()
+    expect(parsePanelMessage({ type: 'settings' })).toBeNull()
+    expect(parsePanelMessage({ type: 'providerVisibility', id: 'nope', visible: true })).toBeNull()
+  })
+})
+
 describe('panel', () => {
   const allProviders = [
     { id: 'claude' as const, name: 'Claude' },
@@ -215,13 +253,19 @@ describe('panel', () => {
     expect(html).toContain('window.render = render')
   })
 
-  test('HTML reports its height and sends setting changes to the host', () => {
+  test('HTML sends setting changes to the host and can be told to open Settings', () => {
     const html = renderPanelHtml(toPanelPayload([usage()], now, panelOptions))
     expect(html).toContain('__electrobunSendToHost')
-    expect(html).toContain("type: 'height'")
     expect(html).toContain("type: 'providerVisibility'")
+    expect(html).toContain('window.openSettings')
     // The Settings section starts hidden unless the user came from the tray's Settings item.
     expect(html).toContain('id="gear"')
+  })
+
+  test('the Panel scrolls inside a fixed window, so long content is never clipped', () => {
+    const html = renderPanelHtml(toPanelPayload([usage()], now, panelOptions))
+    expect(html).toContain('overflow-y:auto')
+    expect(PANEL_HEIGHT).toBeGreaterThan(300)
   })
 })
 

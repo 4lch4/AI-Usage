@@ -65,7 +65,14 @@ export function scriptJson(value: unknown): string {
 }
 
 export const PANEL_WIDTH = 320
-export const PANEL_HEIGHT = 300
+/**
+ * Fixed, and the Panel scrolls inside it.
+ *
+ * Sizing the window to its content meant a page-to-shell round trip per render, which is how a long
+ * provider error used to be clipped; the shell cannot measure the page without that channel. A fixed
+ * height with `overflow-y: auto` cannot clip anything and costs one scrollbar.
+ */
+export const PANEL_HEIGHT = 420
 
 const STYLE = `
 :root { color-scheme: light dark; --bg:#fff; --fg:#111827; --muted:#6b7280; --track:#e5e7eb; --card:#f3f4f6;
@@ -73,7 +80,8 @@ const STYLE = `
 @media (prefers-color-scheme: dark) { :root { --bg:#111827; --fg:#f3f4f6; --muted:#9ca3af; --track:#374151;
   --card:#1f2937; --ok:#4ade80; --warn:#facc15; --critical:#f87171; } }
 * { box-sizing: border-box; }
-body { margin:0; padding:12px; background:var(--bg); color:var(--fg); font:13px system-ui, "Segoe UI", sans-serif; overflow:hidden; }
+body { margin:0; padding:12px; background:var(--bg); color:var(--fg); font:13px system-ui, "Segoe UI", sans-serif;
+  overflow-y:auto; }
 section { background:var(--card); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
 h2 { margin:0 0 8px; font-size:13px; font-weight:600; }
 .row { margin-bottom:8px; } .row:last-child { margin-bottom:0; }
@@ -118,6 +126,7 @@ function el(tag, cls, text) {
 var current = window.__INITIAL__;
 var settingsOpen = current.openSettings;
 var CHOICES = current.choices;
+var BRIDGE = typeof window.__electrobunSendToHost === 'function';
 function send(message) {
   if (window.__electrobunSendToHost) window.__electrobunSendToHost(message);
 }
@@ -173,12 +182,12 @@ function renderSettings(payload) {
     group.appendChild(label);
   });
   box.appendChild(group);
+  if (!BRIDGE) {
+    // Without the bridge nothing here can reach the app, so say so rather than letting the user
+    // move controls that silently do nothing.
+    box.appendChild(el('div', 'error', 'Settings cannot be saved: the app bridge is unavailable.'));
+  }
   return box;
-}
-function measure() {
-  // The shell sizes the window from this, so the Panel is never taller than its content and an
-  // error message cannot be clipped by a fixed height.
-  send({ type: 'height', value: Math.ceil(document.documentElement.scrollHeight) });
 }
 function render(payload) {
   current = payload;
@@ -212,18 +221,59 @@ function render(payload) {
   root.appendChild(renderSettings(payload));
 
   document.getElementById('updated').textContent = 'Updated ' + new Date(payload.fetchedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  measure();
 }
 window.render = render;
+// Called by the shell when Settings was asked for from the tray and the Panel already existed.
+window.openSettings = function () {
+  settingsOpen = true;
+  var node = document.getElementById('settings');
+  if (node) node.hidden = false;
+};
 document.getElementById('gear').addEventListener('click', function () {
   settingsOpen = !settingsOpen;
   document.getElementById('settings').hidden = !settingsOpen;
-  measure();
 });
 render(current);
-setInterval(function () { render(current); measure(); }, 30000);
-window.addEventListener('resize', measure);
+setInterval(function () { render(current); }, 30000);
 `
+
+/** What the Panel's Settings section can ask the shell to do. */
+export type PanelMessage =
+  | { type: 'settings'; patch: Partial<Settings> }
+  | { type: 'providerVisibility'; id: ProviderId; visible: boolean }
+
+/**
+ * Reads a message the Panel sent with `__electrobunSendToHost`.
+ *
+ * The page sends `JSON.stringify(message)`, and Electrobun then parses that detail a *second* time
+ * before handing it to the shell, so what arrives is normally the decoded object. Accepting only a
+ * string silently drops every message, which is exactly the bug this guards: the Panel appeared to
+ * work while its Settings did nothing.
+ */
+export function parsePanelMessage(detail: unknown): PanelMessage | null {
+  let value = detail
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      return null
+    }
+  }
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+
+  if (record.type === 'settings') {
+    const patch = record.patch
+    if (typeof patch !== 'object' || patch === null) return null
+    return { type: 'settings', patch: patch as Partial<Settings> }
+  }
+  if (record.type === 'providerVisibility') {
+    const id = record.id
+    if (id !== 'claude' && id !== 'opencode-go') return null
+    return { type: 'providerVisibility', id, visible: Boolean(record.visible) }
+  }
+  return null
+}
 
 export function renderPanelHtml(payload: PanelPayload): string {
   return `<!doctype html>

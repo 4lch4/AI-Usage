@@ -35,13 +35,25 @@ Refresh and would re-announce something already reported.
 **A hidden Provider draws nothing at all** in the tray icon, not an empty bar, because a dim empty
 bar reads as "no data" rather than "switched off".
 
-**The Panel reports its own height** and the shell resizes the window to match, rather than a fixed
-height. The previous fixed height also meant a long error message could be clipped.
+**The Panel has a fixed height and scrolls inside it.** An earlier version had the Panel report its
+own height so the shell could size the window to it. That was reverted: sizing the window to its
+contents needs a page-to-shell round trip on every render, and the only thing that round trip can be
+used for is measurement. A fixed height with `overflow-y: auto` cannot clip anything, and costs one
+scrollbar.
+
+**The page-to-shell channel is parsed by `parsePanelMessage`, not the shell.** Electrobun parses the
+`host-message` detail a second time before delivering it, so what arrives is normally an object even
+though the page sent a string. Parsing only a string dropped every message silently: the Panel
+rendered and responded to clicks, while its Settings did nothing. That parse lives in `src/core` so
+it is covered by tests rather than discovered on Windows.
 
 ## Consequences
 
-- Settings parsing, clamping, round-tripping and the Alert state machine are all covered by `bun test`
-  on any OS. The untested shell only forwards patches and calls the already-tested functions.
+- Settings parsing, clamping, round-tripping, the Panel message protocol and the Alert state machine
+  are all covered by `bun test` on any OS. The untested shell only forwards patches and calls the
+  already-tested functions.
+- The Panel shows an explicit warning when `__electrobunSendToHost` is missing, so a broken bridge
+  reports itself instead of presenting dead controls.
 - The saved file is a public interface. Renaming a Setting silently resets it to the default, and a
   user edit that is merely the wrong type degrades one field rather than the whole file.
 - The interval choices and the alert thresholds are defined in `settings.ts` and shipped to the Panel

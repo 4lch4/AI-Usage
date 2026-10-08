@@ -8,6 +8,7 @@ import { type IconSlot, renderTrayIcon } from '../core/icon.ts'
 import {
   PANEL_HEIGHT,
   PANEL_WIDTH,
+  parsePanelMessage,
   renderPanelHtml,
   scriptJson,
   toPanelPayload,
@@ -36,7 +37,6 @@ let settings: Settings = { ...DEFAULT_SETTINGS }
 let results: ProviderUsage[] = []
 let panel: BrowserWindow | undefined
 let panelVisible = false
-let panelHeight = PANEL_HEIGHT
 let openWithSettings = false
 let iconCounter = 0
 let refreshing = false
@@ -150,7 +150,7 @@ function pushToPanel(): void {
  * `positionPanel` still prefers real icon bounds wherever they are reported.
  */
 function panelSpot(): { x: number; y: number } | null {
-  const size = { width: PANEL_WIDTH, height: panelHeight }
+  const size = { width: PANEL_WIDTH, height: PANEL_HEIGHT }
   const display = Screen.getPrimaryDisplay()
   return (
     positionPanel(tray.getBounds(), size, display.bounds) ??
@@ -160,13 +160,15 @@ function panelSpot(): { x: number; y: number } | null {
 
 function placePanel(): void {
   const spot = panelSpot()
-  if (spot) panel?.setFrame(spot.x, spot.y, PANEL_WIDTH, panelHeight)
+  if (spot) panel?.setFrame(spot.x, spot.y, PANEL_WIDTH, PANEL_HEIGHT)
 }
 
 function openPanel(withSettings: boolean): void {
   openWithSettings = withSettings
   if (panel) {
     placePanel()
+    if (withSettings)
+      panel.webview.executeJavascript('window.openSettings && window.openSettings()')
     pushToPanel()
     panel.show()
   } else {
@@ -174,7 +176,7 @@ function openPanel(withSettings: boolean): void {
     panel = new BrowserWindow({
       title: 'AI Usage',
       html: renderPanelHtml(panelPayload()),
-      frame: { x: spot?.x, y: spot?.y, width: PANEL_WIDTH, height: panelHeight },
+      frame: { x: spot?.x, y: spot?.y, width: PANEL_WIDTH, height: PANEL_HEIGHT },
       titleBarStyle: 'hidden',
     })
     panel.setAlwaysOnTop(true)
@@ -187,7 +189,7 @@ function openPanel(withSettings: boolean): void {
       panelVisible = false
     })
     panel.webview.on('host-message', event => {
-      const detail = (event as { data?: { detail?: string } }).data?.detail
+      const detail = (event as { data?: { detail?: unknown } }).data?.detail
       if (detail) onHostMessage(detail)
     })
     if (!spot) panel.center()
@@ -205,39 +207,16 @@ function togglePanel(): void {
   openPanel(false)
 }
 
-/** Messages the Panel's Settings section sends with `__electrobunSendToHost`. */
-function onHostMessage(detail: string): void {
-  let message: unknown
-  try {
-    message = JSON.parse(detail)
-  } catch {
-    return
-  }
-  const record = (message ?? {}) as Record<string, unknown>
-  if (record.type === 'height') {
-    setPanelHeight(Number(record.value))
-    return
-  }
-  if (record.type === 'providerVisibility') {
-    const id = record.id as ProviderId
-    const visible = Boolean(record.visible)
+function onHostMessage(detail: unknown): void {
+  const message = parsePanelMessage(detail)
+  if (!message) return
+  if (message.type === 'providerVisibility') {
+    const { id, visible } = message
     const next = PROVIDER_ORDER.filter(p => (p === id ? visible : isVisible(settings, p)))
     void applySettings(mergeSettings(settings, { visibleProviders: next }))
     return
   }
-  if (record.type === 'settings') {
-    void applySettings(mergeSettings(settings, (record.patch ?? {}) as Partial<Settings>))
-  }
-}
-
-/** The Panel reports its own height so the window is never taller than its content. */
-function setPanelHeight(value: number): void {
-  if (!Number.isFinite(value)) return
-  const height = Math.max(120, Math.min(value, 640))
-  if (height === panelHeight) return
-  panelHeight = height
-  placePanel()
-  panel?.setSize(PANEL_WIDTH, panelHeight)
+  void applySettings(mergeSettings(settings, message.patch))
 }
 
 function restartTimer(): void {

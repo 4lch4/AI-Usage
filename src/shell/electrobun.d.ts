@@ -67,7 +67,6 @@ declare module 'electrobun/main' {
     }
     on(event: string, handler: (event: unknown) => void): void
     setFrame(x: number, y: number, width: number, height: number): void
-    setSize(width: number, height: number): void
     setAlwaysOnTop(value: boolean): void
     center(): void
     show(): void
