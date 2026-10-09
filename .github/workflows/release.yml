@@ -1,8 +1,11 @@
 name: Release
 
-# Builds the Windows app and attaches it to the GitHub Release that release-please
-# created. Merging the release PR is what triggers this: release-please pushes the
-# tag, and the tag push lands here.
+# Builds the Windows app, attaches it to the draft GitHub Release that release-please
+# created, then publishes the draft. Merging the release PR is what triggers this:
+# release-please creates the draft and (with force-tag-creation) pushes the tag, and
+# the tag push lands here. The release stays a draft until every build has attached,
+# so a failed build never publishes a release with files missing; re-run the failed
+# job and the draft is filled in and published.
 #
 # Requires secrets.RELEASE_PLEASE_TOKEN (a PAT, not GITHUB_TOKEN) in the
 # release-please workflow. Tags created with GITHUB_TOKEN do not trigger workflows,
@@ -14,6 +17,11 @@ on:
 
 permissions:
   contents: read
+
+# Two releases close together must not interleave their uploads.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -61,8 +69,8 @@ jobs:
           path: build/stable-win-x64/AI Usage-Setup.exe
           if-no-files-found: error
 
-  release:
-    name: Attach to release
+  publish:
+    name: Attach and publish
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -78,9 +86,19 @@ jobs:
       - name: Rename for the release
         run: mv "dist/AI Usage-Setup.exe" "dist/AI-Usage-${{ github.ref_name }}-win-x64-setup.exe"
 
-      - name: Upload to the release
+      # This job has no checkout, so gh needs the repository named explicitly.
+      - name: Upload to the draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           ls -la dist
           gh release upload "${{ github.ref_name }}" dist/*.exe --clobber
+
+      # Runs only after every file is attached. Publishing an already published release is a
+      # no-op, so re-running this job is safe.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false

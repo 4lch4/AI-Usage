@@ -1,9 +1,9 @@
 name: Release Please
 
 # Maintains an open "chore(main): release X.Y.Z" PR. Merging it is the release:
-# release-please bumps package.json, writes CHANGELOG.md, tags vX.Y.Z, and creates
-# the GitHub Release. The tag push then triggers release.yml, which attaches the
-# Windows build to that release.
+# release-please bumps package.json and electrobun.config.ts, writes CHANGELOG.md,
+# tags vX.Y.Z, and creates the GitHub Release as a draft. The tag push then triggers
+# release.yml, which attaches the Windows build and publishes the draft.
 #
 # The token must be a PAT (secrets.RELEASE_PLEASE_TOKEN), NOT the default
 # GITHUB_TOKEN. Resources created with GITHUB_TOKEN do not trigger workflows, so
