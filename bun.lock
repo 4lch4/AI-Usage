@@ -7,8 +7,8 @@
       "devDependencies": {
         "@biomejs/biome": "^2.5.14",
         "@types/bun": "^1.4.2",
-        "@types/node": "^26.6.2",
-        "electrobun": "2.0.3-beta.11",
+        "@types/node": "^26.6.5",
+        "electrobun": "2.0.3-beta.18",
         "husky": "^9.1.7",
         "lint-staged": "^17.5.1",
         "typescript": "^7.0.2",
@@ -36,7 +36,7 @@
 
     "@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 
-    "@types/node": ["@types/node@26.6.4", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg=="],
+    "@types/node": ["@types/node@26.6.5", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg=="],
 
     "@typescript/typescript-aix-ppc64": ["@typescript/typescript-aix-ppc64@7.0.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ=="],
 
@@ -80,7 +80,7 @@
 
     "bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
 
-    "electrobun": ["electrobun@2.0.3-beta.11", "", { "bin": { "electrobun": "bin/electrobun.cjs" } }, "sha512-8UuXuA7WF+iwWVeBTiOVBTt5O6mYCCRSG+jX43QfVzJRCEnP5B5QDEqK49IqLPV2q2R0VeLrohzjk2b+Y+Cqhw=="],
+    "electrobun": ["electrobun@2.0.3-beta.18", "", { "bin": { "electrobun": "bin/electrobun.cjs" } }, "sha512-rrqNwPX2jltTQujisRaDBPzW+geQLvM7+SswXqA/Dc/lr9d9GSKMmGRff1LkMgkSSWsNGFMS7EzsBdinbRpy0w=="],
 
     "husky": ["husky@9.1.7", "", { "bin": { "husky": "bin.js" } }, "sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA=="],
 
