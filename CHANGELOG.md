@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/4lch4/AI-Usage/compare/v0.2.0...v0.2.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **release:** ship the installer payload with Setup so it can install ([3c3eeb7](https://github.com/4lch4/AI-Usage/commit/3c3eeb7a7d542c79c601ad7f6e38871a1684a01b))
+* **release:** ship the installer payload with Setup so it can install ([2b50b52](https://github.com/4lch4/AI-Usage/commit/2b50b52fb8270f8c040116ab988bf821fb548b62))
+
 ## [0.2.0](https://github.com/4lch4/AI-Usage/compare/v0.1.0...v0.2.0) (2026-10-15)
 
 
