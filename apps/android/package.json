@@ -5,7 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "android": "expo run:android",
-    "build:debug": "expo prebuild --platform android --clean && cd android && ./gradlew assembleDebug",
+    "build:apk": "expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
     "icons": "bun run scripts/make-icons.ts",
     "prebuild": "expo prebuild --platform android --clean",
     "start": "expo start"

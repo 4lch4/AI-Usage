@@ -69,12 +69,13 @@ The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
 phone: see [ADR 4](docs/adr/0004-android-app.md). On first launch, paste your OpenCode API key; it
 stays on the phone. Pull down to refresh.
 
-Every PR's CI run builds a debug APK, **ai-usage-android-debug**, under the run's artifacts. To build
-one yourself you need JDK 17 and the Android SDK:
+Every PR's CI run builds a test APK, **ai-usage-android-test**, under the run's artifacts. It is signed
+with Expo's debug key, so uninstall it before installing a signed release. To build one yourself you
+need JDK 17 and the Android SDK:
 
 ```sh
 cd apps/android
-bun run build:debug   # android/app/build/outputs/apk/debug/app-debug.apk
+bun run build:apk   # android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ## Install
