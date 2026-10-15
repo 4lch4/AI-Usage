@@ -1,12 +1,15 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BrowserWindow, Screen, Tray } from 'electrobun/main'
+import { BrowserWindow, BuildConfig, Screen, Tray, Utils } from 'electrobun/main'
+import { type Alert, describeAlert, detectAlerts } from '../core/alert.ts'
+import { applyAutostart, readAutostart, reconcileAutostart } from '../core/autostart.ts'
 import { formatTooltip, worstPercent } from '../core/format.ts'
-import { renderTrayIcon } from '../core/icon.ts'
+import { type IconSlot, renderTrayIcon } from '../core/icon.ts'
 import {
   PANEL_HEIGHT,
   PANEL_WIDTH,
+  parsePanelMessage,
   renderPanelHtml,
   scriptJson,
   toPanelPayload,
@@ -15,28 +18,85 @@ import { positionInWorkArea, positionPanel } from '../core/position.ts'
 import { createClaudeProvider } from '../core/providers/claude.ts'
 import { createOpenCodeGoProvider } from '../core/providers/opencode-go.ts'
 import { refreshAll } from '../core/refresh.ts'
-import type { ProviderId, ProviderUsage } from '../core/types.ts'
+import {
+  DEFAULT_SETTINGS,
+  isVisible,
+  loadSettings,
+  mergeSettings,
+  type Settings,
+  saveSettings,
+} from '../core/settings.ts'
+import type { Provider, ProviderId, ProviderUsage } from '../core/types.ts'
 
-const REFRESH_MS = Math.max(60, Number(process.env.AI_USAGE_REFRESH_SECONDS) || 300) * 1000
-// Used only to keep the panel on screen; Windows hands the tray icon's bounds in logical pixels.
-const providers = [createClaudeProvider(), createOpenCodeGoProvider()]
+const providers: Provider[] = [createClaudeProvider(), createOpenCodeGoProvider()]
+/** Row order in the tray icon and the Providers list, so both stay stable as things are toggled. */
+const PROVIDER_ORDER = providers.map(p => p.id)
 const iconDir = join(tmpdir(), 'ai-usage')
+const configDir = Utils.paths.config
 
+/**
+ * Autostart needs a command that still works at login. `bun run dev` does not qualify: it is a
+ * Hutch watch session, and the launcher is only the thing to point at in a packaged build, where
+ * Electrobun spawns it with CREATE_NO_WINDOW. Refusing in dev keeps a Run entry from reloading the
+ * app on every login.
+ */
+const isPackaged = BuildConfig.getSync().isPackaged
+/**
+ * The launcher in the installed app, which is what Windows must run at login.
+ *
+ * Not `process.execPath`: the launcher spawns the Bun runtime as a child, so inside this process
+ * that is `bin/bun.exe`, and running it at login would start Bun with no script. The install root is
+ * `%LOCALAPPDATA%\<identifier>\<channel>` and the app lives under its `app` folder. `userData`
+ * already resolves that root, honouring `ELECTROBUN_INSTALL_ROOT_NAME` for a custom install
+ * directory.
+ */
+const launcherPath = join(Utils.paths.userData, 'app', 'bin', 'launcher.exe')
+
+let settings: Settings = { ...DEFAULT_SETTINGS }
 let results: ProviderUsage[] = []
 let panel: BrowserWindow | undefined
 let panelVisible = false
+let openWithSettings = false
 let iconCounter = 0
 let refreshing = false
+let timer: ReturnType<typeof setInterval> | undefined
+let alerted = new Set<string>()
+
+// Settings load before the Tray is built, not after. The Tray's first icon is drawn from the
+// current settings, so loading them afterwards draws the default providers for a frame and then
+// redraws: a Provider switched off flickers into existence on every launch.
+settings = await loadSettings({ configDir })
+
+if (isPackaged) {
+  // The registry is the truth: an entry can survive the app being moved or the folder being deleted.
+  const state = await readAutostart(launcherPath)
+  const action = reconcileAutostart(settings.autostart, state)
+  if (action === 'rewrite' || action === 'remove') {
+    try {
+      await applyAutostart(action === 'rewrite', launcherPath)
+    } catch (error) {
+      console.error('Could not repair a stale autostart entry:', error)
+    }
+  } else if (action === 'adopt') {
+    settings = { ...settings, autostart: state.enabled }
+    try {
+      await saveSettings(settings, { configDir })
+    } catch (error) {
+      console.error('Could not save settings:', error)
+    }
+  }
+}
 
 const tray = new Tray({
   title: 'AI Usage: loading…',
-  image: await writeIcon([null, null]),
+  image: await writeIcon(),
   template: false,
   width: 32,
   height: 32,
 })
 tray.setMenu([
   { type: 'normal', label: 'Show usage', action: 'show' },
+  { type: 'normal', label: 'Settings…', action: 'settings' },
   { type: 'normal', label: 'Refresh now', action: 'refresh' },
   { type: 'separator' },
   { type: 'normal', label: 'Quit', action: 'quit' },
@@ -46,17 +106,42 @@ tray.on('tray-clicked', event => {
   const action = (event as { data?: { action?: string } }).data?.action
   if (action === 'refresh') void refresh()
   else if (action === 'quit') quit()
+  else if (action === 'settings') openPanel(true)
   else togglePanel()
 })
 
-async function writeIcon(values: [number | null, number | null]): Promise<string> {
+/** The Providers the user has switched on, in icon order. */
+function visibleResults(): ProviderUsage[] {
+  return results.filter(r => isVisible(settings, r.id))
+}
+
+function iconSlots(): IconSlot[] {
+  return PROVIDER_ORDER.map(id => ({
+    value: worstPercent(results.find(r => r.id === id)),
+    visible: isVisible(settings, id),
+  }))
+}
+
+async function writeIcon(): Promise<string> {
   // A fresh file name each time, so the tray never serves a cached image.
   await mkdir(iconDir, { recursive: true })
-  const path = join(iconDir, `tray-${process.pid}-${iconCounter++}.png`)
-  await writeFile(path, renderTrayIcon(values))
+  const path = join(iconDir, `tray-${process.pid}-${iconCounter++}.ico`)
+  await writeFile(path, renderTrayIcon(iconSlots()))
   if (iconCounter > 2)
-    await rm(join(iconDir, `tray-${process.pid}-${iconCounter - 3}.png`), { force: true })
+    await rm(join(iconDir, `tray-${process.pid}-${iconCounter - 3}.ico`), { force: true })
   return path
+}
+
+function panelPayload() {
+  return toPanelPayload(results, new Date(), {
+    settings,
+    allProviders: PROVIDER_ORDER.map((id, index) => ({
+      id,
+      name: providers[index]?.name ?? id,
+    })),
+    autostartAvailable: isPackaged,
+    openSettings: openWithSettings,
+  })
 }
 
 async function refresh(): Promise<void> {
@@ -65,11 +150,10 @@ async function refresh(): Promise<void> {
   try {
     const previous = new Map<ProviderId, ProviderUsage>(results.map(r => [r.id, r]))
     results = await refreshAll(providers, previous)
-    const [claude, opencode] = ['claude', 'opencode-go'].map(id =>
-      worstPercent(results.find(r => r.id === id)),
-    )
-    tray.setImage(await writeIcon([claude ?? null, opencode ?? null]))
-    tray.setTitle(formatTooltip(results))
+    const shown = visibleResults()
+    tray.setImage(await writeIcon())
+    tray.setTitle(formatTooltip(shown))
+    announce(shown)
     pushToPanel()
   } catch (error) {
     // Providers already report their own failures; this only catches tray and icon trouble.
@@ -80,13 +164,26 @@ async function refresh(): Promise<void> {
   }
 }
 
+function announce(shown: ProviderUsage[]): void {
+  const { alerts, alerted: next } = detectAlerts(shown, alerted, settings.alertAtPercent)
+  alerted = next
+  for (const alert of alerts) notify(alert)
+}
+
+function notify(alert: Alert): void {
+  try {
+    const { title, body } = describeAlert(alert)
+    Utils.showNotification({ title, body })
+  } catch (error) {
+    console.error('Could not show the near-limit notification:', error)
+  }
+}
+
 function pushToPanel(): void {
   if (!panel) return
   // The popup's HTML is loaded a moment after the window exists, so a refresh that lands in
   // that gap would otherwise run against a blank page and throw inside the webview.
-  panel.webview.executeJavascript(
-    `if (window.render) window.render(${scriptJson(toPanelPayload(results, new Date()))})`,
-  )
+  panel.webview.executeJavascript(`if (window.render) window.render(${scriptJson(panelPayload())})`)
 }
 
 /**
@@ -99,22 +196,31 @@ function pushToPanel(): void {
  */
 function panelSpot(): { x: number; y: number } | null {
   const size = { width: PANEL_WIDTH, height: PANEL_HEIGHT }
-  const anchored = positionPanel(tray.getBounds(), size, Screen.getPrimaryDisplay().bounds)
-  if (anchored) return anchored
-  return positionInWorkArea(size, Screen.getPrimaryDisplay().workArea)
+  const display = Screen.getPrimaryDisplay()
+  return (
+    positionPanel(tray.getBounds(), size, display.bounds) ??
+    positionInWorkArea(size, display.workArea)
+  )
 }
 
-function togglePanel(): void {
-  if (panel && panelVisible) {
-    panel.hide()
-    panelVisible = false
-    return
-  }
-  if (!panel) {
+function placePanel(): void {
+  const spot = panelSpot()
+  if (spot) panel?.setFrame(spot.x, spot.y, PANEL_WIDTH, PANEL_HEIGHT)
+}
+
+function openPanel(withSettings: boolean): void {
+  openWithSettings = withSettings
+  if (panel) {
+    placePanel()
+    if (withSettings)
+      panel.webview.executeJavascript('window.openSettings && window.openSettings()')
+    pushToPanel()
+    panel.show()
+  } else {
     const spot = panelSpot()
     panel = new BrowserWindow({
       title: 'AI Usage',
-      html: renderPanelHtml(toPanelPayload(results, new Date())),
+      html: renderPanelHtml(panelPayload()),
       frame: { x: spot?.x, y: spot?.y, width: PANEL_WIDTH, height: PANEL_HEIGHT },
       titleBarStyle: 'hidden',
     })
@@ -127,16 +233,71 @@ function togglePanel(): void {
       panel = undefined
       panelVisible = false
     })
+    panel.webview.on('host-message', event => {
+      const detail = (event as { data?: { detail?: unknown } }).data?.detail
+      if (detail) onHostMessage(detail)
+    })
     if (!spot) panel.center()
-  } else {
-    // Re-anchor each time: the taskbar or the icon may have moved since the Panel was created.
-    const spot = panelSpot()
-    if (spot) panel.setFrame(spot.x, spot.y, PANEL_WIDTH, PANEL_HEIGHT)
-    pushToPanel()
-    panel.show()
   }
   panel.activate()
   panelVisible = true
+}
+
+function togglePanel(): void {
+  if (panel && panelVisible) {
+    panel.hide()
+    panelVisible = false
+    return
+  }
+  openPanel(false)
+}
+
+function onHostMessage(detail: unknown): void {
+  const message = parsePanelMessage(detail)
+  if (!message) return
+  if (message.type === 'autostart') {
+    void setAutostart(message.enabled)
+    return
+  }
+  if (message.type === 'providerVisibility') {
+    const { id, visible } = message
+    const next = PROVIDER_ORDER.filter(p => (p === id ? visible : isVisible(settings, p)))
+    void applySettings(mergeSettings(settings, { visibleProviders: next }))
+    return
+  }
+  void applySettings(mergeSettings(settings, message.patch))
+}
+
+function restartTimer(): void {
+  if (timer) clearInterval(timer)
+  timer = setInterval(() => void refresh(), settings.refreshSeconds * 1000)
+}
+
+async function setAutostart(enabled: boolean): Promise<void> {
+  if (!isPackaged) return
+  try {
+    await applyAutostart(enabled, launcherPath)
+  } catch (error) {
+    // Report rather than leave the checkbox lying: a failed write means autostart is still off.
+    console.error('Could not change autostart:', error)
+    pushToPanel()
+    return
+  }
+  await applySettings(mergeSettings(settings, { autostart: enabled }))
+}
+
+async function applySettings(next: Settings): Promise<void> {
+  const intervalChanged = next.refreshSeconds !== settings.refreshSeconds
+  settings = next
+  try {
+    await saveSettings(settings, { configDir })
+  } catch (error) {
+    console.error('Could not save settings:', error)
+  }
+  tray.setImage(await writeIcon())
+  tray.setTitle(formatTooltip(visibleResults()))
+  if (intervalChanged) restartTimer()
+  pushToPanel()
 }
 
 function quit(): void {
@@ -145,5 +306,7 @@ function quit(): void {
 }
 
 await refresh()
-setInterval(() => void refresh(), REFRESH_MS)
-console.log(`AI Usage running; refreshing every ${REFRESH_MS / 1000}s.`)
+restartTimer()
+console.log(
+  `AI Usage running; refreshing every ${settings.refreshSeconds}s. Settings in ${configDir}.`,
+)

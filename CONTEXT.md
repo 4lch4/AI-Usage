@@ -28,8 +28,20 @@ always labeled as such.
 The small popup that opens when you click the tray icon, with a card per Provider.
 _Avoid_: Popover, flyout, window (a Window is a rate-limit period)
 
+**Settings**:
+The user's saved choices: how often to Refresh, which Providers to show, and when to Alert. Every
+Setting has a default, so a missing or hand-edited file is never fatal.
+_Avoid_: Options, preferences, config, flags
+
+**Alert**:
+A one-time notification that a Window has reached the near-limit threshold. A Provider Alerts once
+per crossing and stays quiet until the Window drops back below, so it does not repeat every Refresh.
+_Avoid_: Warning, notification (the mechanism, not the decision), push
+
 ## Relationships
 
 - A **Provider** has zero or more **Windows**.
 - A **Refresh** produces exactly one result per **Provider**.
 - The tray icon draws one bar per **Provider**, showing its busiest **Window**.
+- **Settings** decide which **Providers** are shown; a **Provider** switched off draws no bar and
+  raises no **Alert**.

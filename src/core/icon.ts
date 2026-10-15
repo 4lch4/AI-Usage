@@ -85,27 +85,34 @@ export function encodeIco(png: Uint8Array, size: number): Uint8Array {
   return ico
 }
 
-/**
- * Draws one meter bar per value, stacked: top is Claude, bottom is OpenCode Go.
- * `null` means no data yet and draws a dim, empty bar.
- */
-export function renderTrayIcon(values: [number | null, number | null]): Uint8Array {
-  return encodeIco(renderTrayPng(values), SIZE)
+/** One row of the tray icon: a Provider's busiest Window, or `null` for no data yet. */
+export interface IconSlot {
+  /** Used percent of the busiest Window, or `null` when there is nothing to show. */
+  value: number | null
+  /** A Provider switched off in Settings draws nothing at all, not an empty bar. */
+  visible: boolean
+}
+
+export function renderTrayIcon(slots: IconSlot[]): Uint8Array {
+  return encodeIco(renderTrayPng(slots), SIZE)
 }
 
 /** The same meters as {@link renderTrayIcon}, as bare PNG bytes. */
-export function renderTrayPng(values: [number | null, number | null]): Uint8Array {
+export function renderTrayPng(slots: IconSlot[]): Uint8Array {
   const rgba = new Uint8Array(SIZE * SIZE * 4)
   const barX = 3
   const barWidth = SIZE - barX * 2
   const barHeight = 10
   const tops = [4, 18] as const
 
-  values.forEach((value, index) => {
+  slots.forEach((slot, index) => {
+    if (!slot.visible) return
     const top = tops[index === 0 ? 0 : 1]
     const fillWidth =
-      value === null ? 0 : Math.max(2, Math.round((Math.min(100, value) / 100) * barWidth))
-    const fill = COLORS[value === null ? 'unknown' : levelFor(value)]
+      slot.value === null
+        ? 0
+        : Math.max(2, Math.round((Math.min(100, slot.value) / 100) * barWidth))
+    const fill = COLORS[slot.value === null ? 'unknown' : levelFor(slot.value)]
     for (let y = top; y < top + barHeight; y++) {
       for (let x = barX; x < barX + barWidth; x++) {
         rgba.set(x - barX < fillWidth ? fill : COLORS.track, (y * SIZE + x) * 4)

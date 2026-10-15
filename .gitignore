@@ -7,6 +7,10 @@ artifacts/
 node_modules/
 coverage/
 
+# Electrobun / Hutch devkit, downloaded per machine
+.hutch/
+.cottontail-tmp/
+
 # logs
 *.log
 

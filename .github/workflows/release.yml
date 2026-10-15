@@ -1,0 +1,104 @@
+name: Release
+
+# Builds the Windows app, attaches it to the draft GitHub Release that release-please
+# created, then publishes the draft. Merging the release PR is what triggers this:
+# release-please creates the draft and (with force-tag-creation) pushes the tag, and
+# the tag push lands here. The release stays a draft until every build has attached,
+# so a failed build never publishes a release with files missing; re-run the failed
+# job and the draft is filled in and published.
+#
+# Requires secrets.RELEASE_PLEASE_TOKEN (a PAT, not GITHUB_TOKEN) in the
+# release-please workflow. Tags created with GITHUB_TOKEN do not trigger workflows,
+# so nothing would be published and the failure would be silent.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+# Two releases close together must not interleave their uploads.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Windows
+    runs-on: windows-2025
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Verify tag matches the manifest version
+        shell: pwsh
+        run: |
+          $expected = (Get-Content .release-please-manifest.json -Raw | ConvertFrom-Json).'.'
+          $tag = $env:GITHUB_REF_NAME.TrimStart('v')
+          if ($tag -ne $expected) {
+            throw "Tag v$tag does not match the manifest version $expected"
+          }
+          "Tag v$tag matches the manifest"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint, typecheck and test
+        run: bun run check; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; bun run typecheck; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; bun test
+
+      # The .exe is unsigned, so Windows SmartScreen warns on first run and the user has to
+      # click "More info" then "Run anyway". That is the accepted trade-off for a personal
+      # app with no code-signing certificate.
+      - name: Build
+        run: bun run build
+
+      - name: Show build output
+        run: Get-ChildItem build -Recurse -Depth 2 | Select-Object FullName
+
+      # The installer is the only thing a user needs. The build directory also holds the ~33 MB
+      # `AIUsage/` payload and a duplicate of it as `AI Usage-Setup.tar.zst`; both are what the
+      # installer unpacks, so shipping them adds tens of megabytes to the release for nothing.
+      - name: Stage the installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: ai-usage-installer
+          path: build/stable-win-x64/AI Usage-Setup.exe
+          if-no-files-found: error
+
+  publish:
+    name: Attach and publish
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the installer
+        uses: actions/download-artifact@v7
+        with:
+          name: ai-usage-installer
+          path: dist
+
+      - name: Rename for the release
+        run: mv "dist/AI Usage-Setup.exe" "dist/AI-Usage-${{ github.ref_name }}-win-x64-setup.exe"
+
+      # This job has no checkout, so gh needs the repository named explicitly.
+      - name: Upload to the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -la dist
+          gh release upload "${{ github.ref_name }}" dist/*.exe --clobber
+
+      # Runs only after every file is attached. Publishing an already published release is a
+      # no-op, so re-running this job is safe.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false

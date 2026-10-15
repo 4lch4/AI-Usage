@@ -5,7 +5,38 @@ much of your Claude and OpenCode Go/Zen usage limits you've used and when they r
 
 It shows two meters in the tray icon (Claude on top, OpenCode Go below; each shows its busiest window) and a
 summary on hover. The tray menu has **Show usage** (a popup with every window and its reset countdown),
-**Refresh now** and **Quit**. It refreshes every 5 minutes (`AI_USAGE_REFRESH_SECONDS`, minimum 60).
+**Settings…**, **Refresh now** and **Quit**. It refreshes every 5 minutes.
+
+A left-click opens the tray menu, not the popup; use **Show usage**. See
+[ADR 1](docs/adr/0001-electrobun-tray-shell.md) for why.
+
+## Settings
+
+Open the popup and click **Settings** in the footer, or pick **Settings…** from the tray menu. You can set:
+
+| Setting              | Choices                        | Default   |
+| -------------------- | ------------------------------ | --------- |
+| Refresh every        | 1, 5, 15, 30 minutes           | 5 minutes |
+| Warn me at           | 70%, 80%, 90%, 95% used        | 90%       |
+| Show in the tray     | Claude, OpenCode Go            | both      |
+| Start with Windows  | on / off                       | off       |
+
+Autostart writes a `HKCU\...\CurrentVersion\Run` entry pointing at the app's `launcher.exe`, so it
+needs no administrator rights and shows up in Task Manager's **Startup** tab where you can turn it off
+without the app. It is only offered in a packaged build: `bun run dev` is a Hutch watch session, and a
+Run entry pointing at it would reload the app at every login.
+
+A Provider you switch off draws no tray meter, disappears from the popup, and stops raising warnings.
+
+You get one Windows notification the first time a window reaches your threshold. It stays quiet
+after that until the window drops back below, so a Provider sitting at 95% does not notify every five
+minutes.
+
+Settings live in `%APPDATA%\AI-Usage\settings.json`. It is hand-editable: a missing, partial or
+corrupt file falls back to the defaults field by field rather than losing your tray. The file is read
+once at startup, so **Quit and relaunch** after editing it. A value you set by hand is added to that
+Setting's dropdown, so the panel shows what is really in effect even if it isn't one of the listed
+choices.
 
 ## Run it
 
@@ -31,6 +62,15 @@ didn't inherit it.
 
 The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
 [ADR 1](docs/adr/0001-electrobun-tray-shell.md).
+
+## Install
+
+Download the latest `AI-Usage-<version>-win-x64-setup.exe` from the
+[releases page](https://github.com/4lch4/AI-Usage/releases), run it, and the app installs to
+`%LOCALAPPDATA%\com.4lch4.ai-usage` with Start Menu and Desktop shortcuts.
+
+It is **not code-signed**, so SmartScreen will warn the first time. Click **More info** →
+**Run anyway**.
 
 ## PowerShell probe
 

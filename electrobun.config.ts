@@ -3,8 +3,8 @@ import type { ElectrobunConfig } from 'electrobun'
 export default {
   app: {
     name: 'AI Usage',
-    identifier: 'dev.4lch4.ai-usage',
-    version: '0.1.0',
+    identifier: 'com.4lch4.ai-usage',
+    version: '0.1.0', // x-release-please-version
   },
   runtime: {
     exitOnLastWindowClosed: false,
