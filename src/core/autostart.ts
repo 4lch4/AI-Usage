@@ -60,6 +60,19 @@ export async function readAutostart(
 }
 
 /**
+ * What to do at launch so the registry and the saved Setting agree. The registry wins, except that a
+ * stale entry is never adopted as-is: it is pointed back at this launcher when the user wants
+ * autostart, and removed when they don't, so login never launches a path that no longer exists.
+ */
+export function reconcileAutostart(
+  saved: boolean,
+  state: AutostartState,
+): 'rewrite' | 'remove' | 'adopt' | 'none' {
+  if (state.stale) return saved ? 'rewrite' : 'remove'
+  return state.enabled === saved ? 'none' : 'adopt'
+}
+
+/**
  * Adds or removes the Run entry. Never throws: a failed write leaves autostart off, which is the
  * safe direction, and the caller reports the failure.
  */

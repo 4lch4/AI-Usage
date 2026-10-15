@@ -5,6 +5,7 @@ import {
   RUN_KEY,
   RUN_VALUE,
   readAutostart,
+  reconcileAutostart,
   startupCommand,
 } from '../src/core/autostart.ts'
 
@@ -109,5 +110,25 @@ describe('applyAutostart', () => {
     const { calls, run } = fakeRun()
     await applyAutostart(true, launcher, { run, platform: 'darwin' })
     expect(calls).toEqual([])
+  })
+})
+
+describe('reconcileAutostart', () => {
+  test('repoints a stale entry when autostart is wanted', () => {
+    expect(reconcileAutostart(true, { enabled: true, stale: true })).toBe('rewrite')
+  })
+
+  test('removes a stale entry when autostart is not wanted', () => {
+    expect(reconcileAutostart(false, { enabled: true, stale: true })).toBe('remove')
+  })
+
+  test('adopts the registry when it disagrees with the saved Setting', () => {
+    expect(reconcileAutostart(true, { enabled: false, stale: false })).toBe('adopt')
+    expect(reconcileAutostart(false, { enabled: true, stale: false })).toBe('adopt')
+  })
+
+  test('does nothing when they agree', () => {
+    expect(reconcileAutostart(true, { enabled: true, stale: false })).toBe('none')
+    expect(reconcileAutostart(false, { enabled: false, stale: false })).toBe('none')
   })
 })

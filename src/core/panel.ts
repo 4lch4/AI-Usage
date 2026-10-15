@@ -298,7 +298,9 @@ export function parsePanelMessage(detail: unknown): PanelMessage | null {
   if (record.type === 'settings') {
     const patch = record.patch
     if (typeof patch !== 'object' || patch === null) return null
-    return { type: 'settings', patch: patch as Partial<Settings> }
+    // Autostart changes the registry, so it only arrives as its own message, never as a Setting.
+    const { autostart: _, ...rest } = patch as Partial<Settings>
+    return { type: 'settings', patch: rest }
   }
   if (record.type === 'providerVisibility') {
     const id = record.id

@@ -185,6 +185,12 @@ describe('parsePanelMessage', () => {
     expect(parsePanelMessage(JSON.stringify(settingsMessage))).toEqual(settingsMessage)
   })
 
+  test('drops autostart from a Settings patch, so it cannot skip the registry write', () => {
+    expect(
+      parsePanelMessage({ type: 'settings', patch: { refreshSeconds: 900, autostart: true } }),
+    ).toEqual(settingsMessage)
+  })
+
   test('reads an autostart toggle', () => {
     expect(parsePanelMessage({ type: 'autostart', enabled: true })).toEqual({
       type: 'autostart',

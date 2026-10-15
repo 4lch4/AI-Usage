@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BrowserWindow, BuildConfig, Screen, Tray, Utils } from 'electrobun/main'
 import { type Alert, describeAlert, detectAlerts } from '../core/alert.ts'
-import { applyAutostart, readAutostart } from '../core/autostart.ts'
+import { applyAutostart, readAutostart, reconcileAutostart } from '../core/autostart.ts'
 import { formatTooltip, worstPercent } from '../core/format.ts'
 import { type IconSlot, renderTrayIcon } from '../core/icon.ts'
 import {
@@ -70,14 +70,14 @@ settings = await loadSettings({ configDir })
 if (isPackaged) {
   // The registry is the truth: an entry can survive the app being moved or the folder being deleted.
   const state = await readAutostart(launcherPath)
-  if (state.stale && !settings.autostart) {
-    // Ours, but pointing at an old path. Drop it rather than launching something else at login.
+  const action = reconcileAutostart(settings.autostart, state)
+  if (action === 'rewrite' || action === 'remove') {
     try {
-      await applyAutostart(false, launcherPath)
+      await applyAutostart(action === 'rewrite', launcherPath)
     } catch (error) {
-      console.error('Could not remove a stale autostart entry:', error)
+      console.error('Could not repair a stale autostart entry:', error)
     }
-  } else if (state.enabled !== settings.autostart) {
+  } else if (action === 'adopt') {
     settings = { ...settings, autostart: state.enabled }
     try {
       await saveSettings(settings, { configDir })
