@@ -9,7 +9,7 @@ Date: 2026-10-08
 The first version hard-coded a five-minute refresh and always showed both Providers. Three things
 were wanted: a configurable refresh interval, the ability to switch a Provider off, and a warning
 before a rate-limit Window runs out. The shell had to stay thin and untested-friendly, so the
-decisions had to live in `src/core` as pure functions.
+decisions had to live in `packages/core` as pure functions.
 
 Two constraints shaped the answer. The Panel is a single HTML string with no front-end build, so it
 cannot own state; and the tray shell is the one file with no tests, so anything decided there would be
@@ -18,9 +18,9 @@ unverified.
 ## Decision
 
 **Settings live in one JSON file under the OS config directory (`%APPDATA%\AI-Usage\settings.json` on
-Windows). `src/core/settings.ts` owns parsing, clamping and merging, and is a pure function of the
-file's contents. Every field has a default, and a field that is missing, the wrong type or out of
-range falls back on its own rather than discarding the file.**
+Windows). `packages/core/src/settings.ts` owns parsing, clamping and merging, and is a pure function
+of the file's contents. Every field has a default, and a field that is missing, the wrong type or out
+of range falls back on its own rather than discarding the file.**
 
 **The Panel edits Settings by sending messages to the shell.** A `Settings` button in the popup footer
 reveals the controls; each one sends a patch with `__electrobunSendToHost`, and the shell merges it,
@@ -44,7 +44,7 @@ scrollbar.
 **The page-to-shell channel is parsed by `parsePanelMessage`, not the shell.** Electrobun parses the
 `host-message` detail a second time before delivering it, so what arrives is normally an object even
 though the page sent a string. Parsing only a string dropped every message silently: the Panel
-rendered and responded to clicks, while its Settings did nothing. That parse lives in `src/core` so
+rendered and responded to clicks, while its Settings did nothing. That parse lives in `packages/core` so
 it is covered by tests rather than discovered on Windows.
 
 ## Consequences
@@ -68,5 +68,5 @@ it is covered by tests rather than discovered on Windows.
   Panel, which is cheap and immediate.
 - Autostart is offered only in a packaged build, because `bun run dev` is a Hutch watch session and a
   Run entry pointing at it would reload the app at every login. It is implemented in
-  `src/core/autostart.ts` and covered by tests; see [ADR 3](0003-release-and-packaging.md) for the
-  packaging it depends on.
+  `packages/core/src/autostart.ts` and covered by tests; see [ADR 3](0003-release-and-packaging.md)
+  for the packaging it depends on.

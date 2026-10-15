@@ -6,16 +6,16 @@ const root = join(import.meta.dir, '..')
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
 /**
- * The Windows installer takes its version from `electrobun.config.ts`, not `package.json`. Release
- * Please only rewrites the config's version line because of the annotation on it, so losing the
- * annotation would quietly ship every build as the old version. See ADR 3.
+ * The Windows installer takes its version from `apps/windows/electrobun.config.ts`, not
+ * `package.json`. Release Please only rewrites the config's version line because of the annotation
+ * on it, so losing the annotation would quietly ship every build as the old version. See ADR 3.
  */
 describe('release versioning', () => {
   const packageVersion = (JSON.parse(read('package.json')) as { version: string }).version
   const manifestVersion = (
     JSON.parse(read('.release-please-manifest.json')) as Record<string, string>
   )['.']
-  const configLine = read('electrobun.config.ts')
+  const configLine = read('apps/windows/electrobun.config.ts')
     .split('\n')
     .find(line => /^\s*version:/.test(line))
 
@@ -37,7 +37,7 @@ describe('release versioning', () => {
     }
     const extra = config.packages['.']?.['extra-files'] ?? []
     expect(extra.map(file => (typeof file === 'string' ? file : file.path))).toContain(
-      'electrobun.config.ts',
+      'apps/windows/electrobun.config.ts',
     )
   })
 
@@ -58,7 +58,7 @@ describe('release versioning', () => {
       'AI Usage-Setup.metadata.json',
       'AI Usage-Setup.tar.zst',
     ]) {
-      expect(workflow).toContain(`build/stable-win-x64/${file}`)
+      expect(workflow).toContain(`apps/windows/build/stable-win-x64/${file}`)
     }
     expect(workflow).toContain('stage/.installer')
   })

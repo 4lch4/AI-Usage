@@ -57,7 +57,7 @@ jobs:
         run: bun run build
 
       - name: Show build output
-        run: Get-ChildItem build -Recurse -Depth 2 | Select-Object FullName
+        run: Get-ChildItem apps/windows/build -Recurse -Depth 2 | Select-Object FullName
 
       # Electrobun's Windows Setup.exe is not self-contained: it unpacks `<stem>.tar.zst` using
       # `<stem>.metadata.json`, and looks for both in a `.installer` folder beside it. Without them
@@ -68,9 +68,9 @@ jobs:
         with:
           name: ai-usage-installer
           path: |
-            build/stable-win-x64/AI Usage-Setup.exe
-            build/stable-win-x64/AI Usage-Setup.metadata.json
-            build/stable-win-x64/AI Usage-Setup.tar.zst
+            apps/windows/build/stable-win-x64/AI Usage-Setup.exe
+            apps/windows/build/stable-win-x64/AI Usage-Setup.metadata.json
+            apps/windows/build/stable-win-x64/AI Usage-Setup.tar.zst
           if-no-files-found: error
 
   publish:

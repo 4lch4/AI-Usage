@@ -36,13 +36,13 @@ Reading the SDK and the Windows native wrapper settles four questions the shell 
 
 ## Decision
 
-**The Electrobun layer is kept as thin as possible. `src/shell/index.ts` wires a tray, a timer and a
-popup window together; all behavior lives in `src/core` as pure functions with injected `fetch`,
-clock and file access.**
+**The Electrobun layer is kept as thin as possible. `apps/windows/src/index.ts` wires a tray, a timer
+and a popup window together; all behavior lives in `packages/core` as pure functions with injected
+`fetch`, clock and file access.**
 
-The popup is a single HTML string rendered by `src/core/panel.ts` and refreshed by calling
+The popup is a single HTML string rendered by `packages/core/src/panel.ts` and refreshed by calling
 `window.render(payload)`, so there is no separate front-end build. The tray icon is a PNG drawn by
-`src/core/icon.ts`, so there are no image assets either.
+`packages/core/src/icon.ts`, so there are no image assets either.
 
 ## Consequences
 
@@ -56,10 +56,17 @@ The popup is a single HTML string rendered by `src/core/panel.ts` and refreshed 
   **We keep the Menu deliberately.** Tauri v2 was considered and rejected for now: its
   `TrayIconEvent::Click` does carry `button` and `rect`, but Tauri confines the TypeScript side to a
   sandboxed webview, so the Providers (network, credentials file, registry read) would move to Rust
-  and take their tests with them. Electron would keep `src/core` and its tests untouched and does
+  and take their tests with them. Electron would keep `packages/core` and its tests untouched and does
   separate `click` from `right-click`, at the cost of bundling Chromium. Revisit if the Menu's
   ergonomics start to matter more than either. Dropping the Menu
   would give left-click-to-open on both buttons, at the cost of moving Refresh and Quit into the
   Panel.
 - The icon is written as an ICO wrapping a PNG. `renderTrayIcon` returns the ICO;
   `renderTrayPng` is the bare PNG the tests decode.
+- Every Panel load logs `Failed to initialize encryption: TypeError: Cannot read properties of
+  undefined (reading 'importKey')`. It is harmless. Electrobun's preload
+  (`package/src/preload/encryption.ts`) imports an AES key with `crypto.subtle`, which WebView2 only
+  exposes in a secure context, and an `html:` window is loaded with `NavigateToString`, which is
+  not one. That key only encrypts Electrobun's typed RPC socket. The Panel talks to the shell
+  through `__electrobunSendToHost` (`host-message`), which the preload sets up separately and
+  sends as plain JSON, so Settings and Refresh are unaffected.
