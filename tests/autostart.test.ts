@@ -43,6 +43,13 @@ describe('parseRunValue', () => {
 })
 
 describe('readAutostart', () => {
+  test('runs reg.exe itself, since the runner spawns its first argument', async () => {
+    // Without `reg` first, Windows tries to spawn `query`, which fails, so autostart always read off.
+    const { calls, run } = fakeRun()
+    await readAutostart(launcher, { run, platform: 'win32' })
+    expect(calls).toEqual([['reg', 'query', RUN_KEY, '/v', RUN_VALUE]])
+  })
+
   test('reports off when there is no Run value', async () => {
     const { run } = fakeRun({ stdout: 'ERROR: The system was unable to find the specified key' })
     expect(await readAutostart(launcher, { run, platform: 'win32' })).toEqual({
@@ -90,13 +97,15 @@ describe('applyAutostart', () => {
   test('writes a REG_SZ entry with /f so an existing value is replaced', async () => {
     const { calls, run } = fakeRun()
     await applyAutostart(true, launcher, { run, platform: 'win32' })
-    expect(calls).toEqual([['add', RUN_KEY, '/v', RUN_VALUE, '/t', 'REG_SZ', '/d', cmd, '/f']])
+    expect(calls).toEqual([
+      ['reg', 'add', RUN_KEY, '/v', RUN_VALUE, '/t', 'REG_SZ', '/d', cmd, '/f'],
+    ])
   })
 
   test('deletes the value to turn autostart off', async () => {
     const { calls, run } = fakeRun()
     await applyAutostart(false, launcher, { run, platform: 'win32' })
-    expect(calls).toEqual([['delete', RUN_KEY, '/v', RUN_VALUE, '/f']])
+    expect(calls).toEqual([['reg', 'delete', RUN_KEY, '/v', RUN_VALUE, '/f']])
   })
 
   test('reports a failed write so the caller can tell the user', async () => {

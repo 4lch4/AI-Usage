@@ -49,7 +49,13 @@ export async function readAutostart(
 ): Promise<AutostartState> {
   if ((deps.platform ?? process.platform) !== 'win32') return { enabled: false, stale: false }
   try {
-    const { exitCode, stdout } = await (deps.run ?? runReg)(['query', RUN_KEY, '/v', RUN_VALUE])
+    const { exitCode, stdout } = await (deps.run ?? runReg)([
+      'reg',
+      'query',
+      RUN_KEY,
+      '/v',
+      RUN_VALUE,
+    ])
     const command = exitCode === 0 ? parseRunValue(stdout, RUN_VALUE) : undefined
     if (!command) return { enabled: false, stale: false }
     const stale = command !== startupCommand(launcherPath)
@@ -84,8 +90,19 @@ export async function applyAutostart(
   if ((deps.platform ?? process.platform) !== 'win32') return
   const run = deps.run ?? runReg
   const args = enabled
-    ? ['add', RUN_KEY, '/v', RUN_VALUE, '/t', 'REG_SZ', '/d', startupCommand(launcherPath), '/f']
-    : ['delete', RUN_KEY, '/v', RUN_VALUE, '/f']
+    ? [
+        'reg',
+        'add',
+        RUN_KEY,
+        '/v',
+        RUN_VALUE,
+        '/t',
+        'REG_SZ',
+        '/d',
+        startupCommand(launcherPath),
+        '/f',
+      ]
+    : ['reg', 'delete', RUN_KEY, '/v', RUN_VALUE, '/f']
   const { exitCode } = await run(args)
   if (exitCode !== 0) {
     throw new Error(
