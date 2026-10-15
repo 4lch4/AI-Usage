@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExpoConfig } from 'expo/config'
+import type { WithAndroidWidgetsParams } from 'react-native-android-widget'
 
 /**
  * Android refuses an update whose `versionCode` is not higher than the installed one, so it is
@@ -39,7 +40,29 @@ const config: ExpoConfig = {
     // The OpenCode API key must not travel to another phone through Auto Backup.
     allowBackup: false,
   },
-  plugins: ['expo-secure-store'],
+  plugins: [
+    'expo-secure-store',
+    [
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            // Must match WIDGET_NAME in src/widget/UsageWidget.tsx.
+            name: 'Usage',
+            label: 'OpenCode Go usage',
+            description: 'Your busiest OpenCode Go limit, refreshed every 30 minutes',
+            minWidth: '40dp',
+            minHeight: '40dp',
+            targetCellWidth: 1,
+            targetCellHeight: 1,
+            resizeMode: 'none',
+            // Android's minimum; the app also redraws the widget whenever it refreshes.
+            updatePeriodMillis: 30 * 60 * 1000,
+          },
+        ],
+      } satisfies WithAndroidWidgetsParams,
+    ],
+  ],
 }
 
 export default config

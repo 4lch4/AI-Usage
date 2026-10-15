@@ -67,3 +67,20 @@ export function iconColorCss(paint: IconPaint): string {
   const [r, g, b, a] = ICON_COLORS[paint]
   return `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 100) / 100})`
 }
+
+/**
+ * The meters as an SVG drawing on the {@link ICON_SIZE} grid, for surfaces that render SVG rather
+ * than pixels, such as the Android widget. Each bar is its track with the fill drawn over it.
+ */
+export function iconSvg(bars: IconBar[], size: number = ICON_SIZE): string {
+  const rect = (bar: IconBar, width: number, paint: IconPaint) => {
+    const [r, g, b, a] = ICON_COLORS[paint]
+    const opacity = Math.round((a / 255) * 100) / 100
+    return `<rect x="${bar.x}" y="${bar.y}" width="${width}" height="${bar.height}" rx="2" fill="rgb(${r},${g},${b})" fill-opacity="${opacity}"/>`
+  }
+  const shapes = bars.flatMap(bar => [
+    rect(bar, bar.width, 'track'),
+    ...(bar.fillWidth > 0 ? [rect(bar, bar.fillWidth, bar.fill)] : []),
+  ])
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${ICON_SIZE} ${ICON_SIZE}">${shapes.join('')}</svg>`
+}
