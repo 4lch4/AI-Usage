@@ -50,5 +50,40 @@
         "useSortedPackageJson": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/core/src/**", "!packages/core/src/node/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["node:*", "node:*/**", "bun", "bun:*"],
+                    "message": "The core outside src/node runs on Android too. Put Node and Bun code in src/node."
+                  },
+                  {
+                    "group": ["**/node/**", "./node/*"],
+                    "message": "Neutral core must not import from src/node."
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "Bun": "The core outside src/node runs on Android too. Put Bun code in src/node.",
+                  "process": "The core outside src/node runs on Android too. Inject what you need instead."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

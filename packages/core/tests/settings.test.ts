@@ -1,14 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { type Alert, describeAlert, detectAlerts } from '../src/alert.ts'
+import { loadSettings, saveSettings, settingsPath } from '../src/node/settings-file.ts'
 import {
   DEFAULT_SETTINGS,
   isVisible,
-  loadSettings,
   mergeSettings,
   parseSettings,
-  saveSettings,
   serializeSettings,
-  settingsPath,
 } from '../src/settings.ts'
 import type { ProviderUsage, UsageWindow } from '../src/types.ts'
 

@@ -68,5 +68,5 @@ it is covered by tests rather than discovered on Windows.
   Panel, which is cheap and immediate.
 - Autostart is offered only in a packaged build, because `bun run dev` is a Hutch watch session and a
   Run entry pointing at it would reload the app at every login. It is implemented in
-  `packages/core/src/autostart.ts` and covered by tests; see [ADR 3](0003-release-and-packaging.md)
-  for the packaging it depends on.
+  `packages/core/src/node/autostart.ts` and covered by tests; see
+  [ADR 3](0003-release-and-packaging.md) for the packaging it depends on.

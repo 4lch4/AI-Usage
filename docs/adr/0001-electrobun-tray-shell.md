@@ -42,7 +42,7 @@ and a popup window together; all behavior lives in `packages/core` as pure funct
 
 The popup is a single HTML string rendered by `packages/core/src/panel.ts` and refreshed by calling
 `window.render(payload)`, so there is no separate front-end build. The tray icon is a PNG drawn by
-`packages/core/src/icon.ts`, so there are no image assets either.
+`packages/core/src/node/icon.ts` from `iconLayout`, so there are no image assets either.
 
 ## Consequences
 

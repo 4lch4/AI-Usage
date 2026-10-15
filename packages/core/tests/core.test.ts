@@ -7,7 +7,7 @@ import {
   levelFor,
   worstPercent,
 } from '../src/format.ts'
-import { renderTrayIcon, renderTrayPng } from '../src/icon.ts'
+import { renderTrayIcon, renderTrayPng } from '../src/node/icon.ts'
 import {
   choicesWithCurrent,
   PANEL_HEIGHT,

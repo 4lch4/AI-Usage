@@ -1,6 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 import { type Provider, ProviderError, type UsageWindow } from '../types.ts'
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
@@ -12,39 +9,15 @@ const WINDOWS = [
   ['seven_day_sonnet', 'Weekly (Sonnet)'],
 ] as const
 
-export interface ClaudeDeps {
-  fetch?: typeof fetch
-  now?: () => Date
-  /** Directory holding `.credentials.json`. Defaults to `$CLAUDE_CONFIG_DIR` or `~/.claude`. */
-  configDir?: string
-  readText?: (path: string) => Promise<string>
-}
-
-interface Credentials {
+/** An OAuth access token for the usage endpoint. */
+export interface ClaudeToken {
   accessToken: string
-  expiresAt?: number
 }
 
-async function readCredentials(deps: ClaudeDeps): Promise<Credentials> {
-  const dir = deps.configDir ?? process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude')
-  const path = join(dir, '.credentials.json')
-  let text: string
-  try {
-    text = await (deps.readText ?? ((p: string) => readFile(p, 'utf8')))(path)
-  } catch {
-    throw new ProviderError(`No Claude Code sign-in found at ${path}. Run "claude" and sign in.`)
-  }
-  let oauth: unknown
-  try {
-    oauth = (JSON.parse(text) as { claudeAiOauth?: unknown }).claudeAiOauth
-  } catch {
-    throw new ProviderError(`${path} is not valid JSON. Run "claude" and sign in again.`)
-  }
-  const { accessToken, expiresAt } = (oauth ?? {}) as Partial<Credentials>
-  if (typeof accessToken !== 'string' || !accessToken) {
-    throw new ProviderError(`${path} has no Claude sign-in token. Run "claude" and sign in again.`)
-  }
-  return { accessToken, expiresAt: typeof expiresAt === 'number' ? expiresAt : undefined }
+export interface ClaudeProviderDeps {
+  /** Where a usable token comes from. It throws a {@link ProviderError} when there is none. */
+  token: () => Promise<ClaudeToken>
+  fetch?: typeof fetch
 }
 
 function toDate(value: unknown): Date | null {
@@ -73,23 +46,16 @@ export function parseClaudeUsage(body: unknown): UsageWindow[] {
 }
 
 /**
- * Claude plan usage through the same OAuth endpoint Claude Code uses, authenticated with the
- * token Claude Code already saved. It never refreshes that token: doing so would rotate the
- * refresh token out from under Claude Code, so an expired token just asks the user to open it.
+ * Claude plan usage through the same OAuth endpoint Claude Code uses. Where the token comes from
+ * is the caller's choice: see `node/claude-code.ts` for the one Claude Code saved.
  */
-export function createClaudeProvider(deps: ClaudeDeps = {}): Provider {
+export function createClaudeProvider(deps: ClaudeProviderDeps): Provider {
   const doFetch = deps.fetch ?? fetch
-  const now = deps.now ?? (() => new Date())
   return {
     id: 'claude',
     name: 'Claude',
     async fetchWindows() {
-      const { accessToken, expiresAt } = await readCredentials(deps)
-      if (expiresAt && expiresAt <= now().getTime()) {
-        throw new ProviderError(
-          'Claude Code’s sign-in has expired. Open "claude" once to refresh it.',
-        )
-      }
+      const { accessToken } = await deps.token()
       const response = await doFetch(USAGE_URL, {
         headers: {
           Authorization: `Bearer ${accessToken}`,

@@ -1,15 +1,10 @@
 import { formatDuration, formatPercent } from '@ai-usage/core/format'
-import { createClaudeProvider } from '@ai-usage/core/providers/claude'
-import { createOpenCodeGoProvider } from '@ai-usage/core/providers/opencode-go'
+import { createDesktopProviders } from '@ai-usage/core/node/providers'
 import { refreshAll } from '@ai-usage/core/refresh'
 
 /** `bun run probe` prints current usage once, to check the data sources without the tray app. */
 const now = new Date()
-const results = await refreshAll(
-  [createClaudeProvider(), createOpenCodeGoProvider()],
-  new Map(),
-  now,
-)
+const results = await refreshAll(createDesktopProviders(), new Map(), now)
 
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ fetchedAt: now.toISOString(), usage: results }, null, 2))

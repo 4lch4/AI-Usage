@@ -7,7 +7,7 @@ import {
   readAutostart,
   reconcileAutostart,
   startupCommand,
-} from '../src/autostart.ts'
+} from '../src/node/autostart.ts'
 
 const launcher = 'C:\\Program Files\\AI Usage\\launcher.exe'
 const cmd = startupCommand(launcher)

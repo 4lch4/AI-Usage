@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { parseRegQuery, readEnv } from '../src/node/windows-env.ts'
 import { createOpenCodeGoProvider, parseOpenCodeGoUsage } from '../src/providers/opencode-go.ts'
-import { parseRegQuery, readEnv } from '../src/windows-env.ts'
 
 const now = new Date('2026-10-07T22:00:00Z')
 
