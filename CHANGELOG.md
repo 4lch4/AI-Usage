@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/4lch4/AI-Usage/compare/v0.2.1...v0.2.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* run reg.exe for autostart so Start with Windows actually saves ([76c4e4c](https://github.com/4lch4/AI-Usage/commit/76c4e4cba56998aee1b8f2ab3b2d83e27658de9b))
+* run reg.exe for autostart so Start with Windows actually saves ([ce6e49b](https://github.com/4lch4/AI-Usage/commit/ce6e49bfa1abc578f12b4ac80532b009a17c82a8))
+
 ## [0.2.1](https://github.com/4lch4/AI-Usage/compare/v0.2.0...v0.2.1) (2026-10-15)
 
 
