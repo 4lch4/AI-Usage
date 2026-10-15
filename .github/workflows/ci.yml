@@ -63,3 +63,41 @@ jobs:
             if (-not (Test-Path -LiteralPath (Join-Path $dir $file))) { throw "Missing $dir/$file" }
           }
           Get-ChildItem $dir | Select-Object Name, Length
+
+  # Builds a test APK from a fresh `expo prebuild` and keeps it as a workflow artifact so a PR's app
+  # can be installed on a phone before merging. It is the release variant, because only that bundles
+  # the JavaScript; a debug APK looks for a Metro server and fails with "Unable to load script". Expo's
+  # template signs it with the debug key, so it installs but cannot upgrade a properly signed release.
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate the native project
+        working-directory: apps/android
+        run: bunx expo prebuild --platform android --no-install
+
+      - name: Build the test APK
+        working-directory: apps/android/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Keep the APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: ai-usage-android-test
+          path: apps/android/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

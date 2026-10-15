@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ICON_SIZE, iconLayout } from '../src/icon-layout.ts'
+import { ICON_SIZE, iconColorCss, iconLayout } from '../src/icon-layout.ts'
 
 describe('iconLayout', () => {
   test('puts the first slot on top and the second below it', () => {
@@ -41,5 +41,10 @@ describe('iconLayout', () => {
     ])
     expect(bars).toHaveLength(1)
     expect(bars[0]).toMatchObject({ y: 18 })
+  })
+
+  test('gives the same colours as CSS', () => {
+    expect(iconColorCss('ok')).toBe('rgba(74, 222, 128, 1)')
+    expect(iconColorCss('track')).toBe('rgba(148, 163, 184, 0.43)')
   })
 })

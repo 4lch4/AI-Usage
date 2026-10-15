@@ -63,3 +63,26 @@ describe('release versioning', () => {
     expect(workflow).toContain('stage/.installer')
   })
 })
+
+describe('Android versioning', async () => {
+  const { default: config, versionCode } = await import('../apps/android/app.config.ts')
+  const packageVersion = (JSON.parse(read('package.json')) as { version: string }).version
+
+  test('the app takes its version from the root package.json', () => {
+    expect(config.version).toBe(packageVersion)
+    expect(config.android?.versionCode).toBe(versionCode(packageVersion))
+  })
+
+  test('every semver bump gives a higher versionCode', () => {
+    const order = ['0.2.2', '0.2.3', '0.3.0', '0.10.0', '1.0.0', '1.0.1', '2.0.0']
+    const codes = order.map(versionCode)
+    expect(codes).toEqual([...codes].sort((a, b) => a - b))
+    expect(new Set(codes).size).toBe(order.length)
+    expect(versionCode('1.2.3')).toBe(1_002_003)
+  })
+
+  test('refuses a version that does not fit', () => {
+    expect(() => versionCode('1.1000.0')).toThrow()
+    expect(() => versionCode('banana')).toThrow()
+  })
+})
