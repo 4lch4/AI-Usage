@@ -22,7 +22,7 @@
     "probe": "cd apps/windows && bun run probe",
     "start": "cd apps/windows && bun run start",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p apps/android"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

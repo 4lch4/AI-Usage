@@ -61,3 +61,9 @@ export function iconLayout(slots: IconSlot[]): IconBar[] {
   })
   return bars
 }
+
+/** An {@link ICON_COLORS} entry as a CSS colour, for surfaces that style views instead of pixels. */
+export function iconColorCss(paint: IconPaint): string {
+  const [r, g, b, a] = ICON_COLORS[paint]
+  return `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 100) / 100})`
+}

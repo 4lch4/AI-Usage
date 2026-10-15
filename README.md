@@ -63,6 +63,20 @@ didn't inherit it.
 The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
 [ADR 1](docs/adr/0001-electrobun-tray-shell.md).
 
+## Android
+
+`apps/android` is an Expo app that shows **OpenCode Go** usage on your phone. Claude is not on the
+phone: see [ADR 4](docs/adr/0004-android-app.md). On first launch, paste your OpenCode API key; it
+stays on the phone. Pull down to refresh.
+
+Every PR's CI run builds a debug APK, **ai-usage-android-debug**, under the run's artifacts. To build
+one yourself you need JDK 17 and the Android SDK:
+
+```sh
+cd apps/android
+bun run build:debug   # android/app/build/outputs/apk/debug/app-debug.apk
+```
+
 ## Install
 
 Download the latest `AI-Usage-<version>-win-x64-setup.zip` from the
