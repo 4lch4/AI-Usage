@@ -48,4 +48,18 @@ describe('release versioning', () => {
     // never happens and the draft is never filled in.
     expect(config['force-tag-creation']).toBe(true)
   })
+
+  test('the release ships Setup together with the payload it unpacks', () => {
+    // Setup.exe alone fails with "The installer package is incomplete": it reads these two files
+    // from a `.installer` folder beside it, matched by its own file name.
+    const workflow = read('.github/workflows/release.yml')
+    for (const file of [
+      'AI Usage-Setup.exe',
+      'AI Usage-Setup.metadata.json',
+      'AI Usage-Setup.tar.zst',
+    ]) {
+      expect(workflow).toContain(`build/stable-win-x64/${file}`)
+    }
+    expect(workflow).toContain('stage/.installer')
+  })
 })

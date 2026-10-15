@@ -39,12 +39,15 @@ be published — a silent failure, which is why it is called out in a comment th
 
 ## Consequences
 
-- A release is: merge to `main`, merge the release PR, download `AI-Usage-<tag>-win-x64-setup.exe`,
-  run it. The installer unpacks the app to `%LOCALAPPDATA%\<identifier>\<channel>` and writes Start
+- A release is: merge to `main`, merge the release PR, download `AI-Usage-<tag>-win-x64-setup.zip`,
+  extract it and run `AI Usage-Setup.exe`. The installer unpacks the app to `%LOCALAPPDATA%\<identifier>\<channel>` and writes Start
   Menu and Desktop shortcuts, which it also knows how to uninstall.
-- Only the installer is attached to the release. `bun run build` also emits the `AIUsage/` payload and
-  a duplicate of it as a ~33 MB `tar.zst`; both are what the installer unpacks, so shipping them would
-  add tens of megabytes to every release for nothing.
+- The release ships one zip holding `AI Usage-Setup.exe` and, in `.installer/` beside it, the
+  ~33 MB `AI Usage-Setup.tar.zst` and its `AI Usage-Setup.metadata.json`. Electrobun's Windows Setup
+  is a small extractor, not a self-contained installer: without those two files it fails with "The
+  installer package is incomplete" (v0.2.0 shipped the bare `.exe` and hit exactly that). The files
+  keep their build names because Setup finds its payload by its own file name. The `AIUsage/` folder
+  `bun run build` also emits is the unpacked app and is not shipped.
 - Autostart points the `Run` entry at `<install root>\app\bin\launcher.exe`. It is **not**
   `process.execPath`: the launcher spawns the Bun runtime as a child, so inside the app that is
   `bun.exe`, and running it at login would start Bun with no script.

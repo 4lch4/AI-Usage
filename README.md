@@ -65,8 +65,10 @@ The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
 
 ## Install
 
-Download the latest `AI-Usage-<version>-win-x64-setup.exe` from the
-[releases page](https://github.com/4lch4/AI-Usage/releases), run it, and the app installs to
+Download the latest `AI-Usage-<version>-win-x64-setup.zip` from the
+[releases page](https://github.com/4lch4/AI-Usage/releases), extract it, and run `AI Usage-Setup.exe`
+from the extracted folder. Keep the `.installer` folder next to it: that is the app itself,
+and Setup fails without it. The app installs to
 `%LOCALAPPDATA%\com.4lch4.ai-usage` with Start Menu and Desktop shortcuts.
 
 It is **not code-signed**, so SmartScreen will warn the first time. Click **More info** →
