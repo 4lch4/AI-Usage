@@ -16,7 +16,7 @@ The `.exe` cannot be signed: that needs a code-signing certificate, which is not
 ## Decision
 
 **Release Please owns versioning.** It maintains an open `chore(main): release X.Y.Z` PR; merging it
-bumps `package.json` and the annotated version line in `electrobun.config.ts`, writes
+bumps `package.json` and the annotated version line in `apps/windows/electrobun.config.ts`, writes
 `CHANGELOG.md`, tags and creates the GitHub Release. The tag push then triggers the build workflow,
 which attaches the installer to that release. `bump-minor-pre-major` is enabled so a `0.x` app gets
 minor bumps rather than being treated as unstable patches.
@@ -53,9 +53,10 @@ be published — a silent failure, which is why it is called out in a comment th
   `bun.exe`, and running it at login would start Bun with no script.
 - A failed build leaves a draft, not a published release with a file missing. Re-running the failed
   job fills it in and publishes it; uploads use `--clobber`, so a re-run is safe.
-- The Windows build's version comes from `electrobun.config.ts`, not `package.json`. Release Please
-  rewrites it only because of the `x-release-please-version` comment on that line, and
-  `tests/release.test.ts` fails if the comment goes missing or the two versions disagree.
+- The Windows build's version comes from `apps/windows/electrobun.config.ts`, not the root
+  `package.json`. Release Please rewrites it only because of the `x-release-please-version` comment
+  on that line, and `tests/release.test.ts` fails if the comment goes missing or the two versions
+  disagree.
 - An unsigned build cannot be distributed to other machines smoothly, and no auto-update is offered.
 - The notification's Windows title still needs checking in a packaged build: the toast is a
   `Shell_NotifyIcon` balloon with no AppUserModelID, so Windows names it after the host process.

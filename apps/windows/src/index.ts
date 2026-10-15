@@ -1,11 +1,10 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BrowserWindow, BuildConfig, Screen, Tray, Utils } from 'electrobun/main'
-import { type Alert, describeAlert, detectAlerts } from '../core/alert.ts'
-import { applyAutostart, readAutostart, reconcileAutostart } from '../core/autostart.ts'
-import { formatTooltip, worstPercent } from '../core/format.ts'
-import { type IconSlot, renderTrayIcon } from '../core/icon.ts'
+import { type Alert, describeAlert, detectAlerts } from '@ai-usage/core/alert'
+import { applyAutostart, readAutostart, reconcileAutostart } from '@ai-usage/core/autostart'
+import { formatTooltip, worstPercent } from '@ai-usage/core/format'
+import { type IconSlot, renderTrayIcon } from '@ai-usage/core/icon'
 import {
   PANEL_HEIGHT,
   PANEL_WIDTH,
@@ -13,11 +12,11 @@ import {
   renderPanelHtml,
   scriptJson,
   toPanelPayload,
-} from '../core/panel.ts'
-import { positionInWorkArea, positionPanel } from '../core/position.ts'
-import { createClaudeProvider } from '../core/providers/claude.ts'
-import { createOpenCodeGoProvider } from '../core/providers/opencode-go.ts'
-import { refreshAll } from '../core/refresh.ts'
+} from '@ai-usage/core/panel'
+import { positionInWorkArea, positionPanel } from '@ai-usage/core/position'
+import { createClaudeProvider } from '@ai-usage/core/providers/claude'
+import { createOpenCodeGoProvider } from '@ai-usage/core/providers/opencode-go'
+import { refreshAll } from '@ai-usage/core/refresh'
 import {
   DEFAULT_SETTINGS,
   isVisible,
@@ -25,8 +24,9 @@ import {
   mergeSettings,
   type Settings,
   saveSettings,
-} from '../core/settings.ts'
-import type { Provider, ProviderId, ProviderUsage } from '../core/types.ts'
+} from '@ai-usage/core/settings'
+import type { Provider, ProviderId, ProviderUsage } from '@ai-usage/core/types'
+import { BrowserWindow, BuildConfig, Screen, Tray, Utils } from 'electrobun/main'
 
 const providers: Provider[] = [createClaudeProvider(), createOpenCodeGoProvider()]
 /** Row order in the tray icon and the Providers list, so both stay stable as things are toggled. */

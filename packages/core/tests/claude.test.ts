@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { createClaudeProvider, parseClaudeUsage } from '../src/core/providers/claude.ts'
-import { ProviderError } from '../src/core/types.ts'
+import { createClaudeProvider, parseClaudeUsage } from '../src/providers/claude.ts'
+import { ProviderError } from '../src/types.ts'
 
 const credentials = (expiresAt = 4102444800000) =>
   JSON.stringify({ claudeAiOauth: { accessToken: 'sk-ant-oat-test', expiresAt } })

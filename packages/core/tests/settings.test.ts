@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { type Alert, describeAlert, detectAlerts } from '../src/core/alert.ts'
+import { type Alert, describeAlert, detectAlerts } from '../src/alert.ts'
 import {
   DEFAULT_SETTINGS,
   isVisible,
@@ -9,8 +9,8 @@ import {
   saveSettings,
   serializeSettings,
   settingsPath,
-} from '../src/core/settings.ts'
-import type { ProviderUsage, UsageWindow } from '../src/core/types.ts'
+} from '../src/settings.ts'
+import type { ProviderUsage, UsageWindow } from '../src/types.ts'
 
 const now = new Date('2026-10-07T22:00:00Z')
 

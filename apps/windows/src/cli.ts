@@ -1,7 +1,7 @@
-import { formatDuration, formatPercent } from './core/format.ts'
-import { createClaudeProvider } from './core/providers/claude.ts'
-import { createOpenCodeGoProvider } from './core/providers/opencode-go.ts'
-import { refreshAll } from './core/refresh.ts'
+import { formatDuration, formatPercent } from '@ai-usage/core/format'
+import { createClaudeProvider } from '@ai-usage/core/providers/claude'
+import { createOpenCodeGoProvider } from '@ai-usage/core/providers/opencode-go'
+import { refreshAll } from '@ai-usage/core/refresh'
 
 /** `bun run probe` prints current usage once, to check the data sources without the tray app. */
 const now = new Date()

@@ -6,8 +6,8 @@ import {
   formatTooltip,
   levelFor,
   worstPercent,
-} from '../src/core/format.ts'
-import { renderTrayIcon, renderTrayPng } from '../src/core/icon.ts'
+} from '../src/format.ts'
+import { renderTrayIcon, renderTrayPng } from '../src/icon.ts'
 import {
   choicesWithCurrent,
   PANEL_HEIGHT,
@@ -15,11 +15,11 @@ import {
   renderPanelHtml,
   scriptJson,
   toPanelPayload,
-} from '../src/core/panel.ts'
-import { positionInWorkArea, positionPanel } from '../src/core/position.ts'
-import { refreshAll } from '../src/core/refresh.ts'
-import { ALERT_CHOICES, DEFAULT_SETTINGS, REFRESH_CHOICES } from '../src/core/settings.ts'
-import { type Provider, ProviderError, type ProviderUsage } from '../src/core/types.ts'
+} from '../src/panel.ts'
+import { positionInWorkArea, positionPanel } from '../src/position.ts'
+import { refreshAll } from '../src/refresh.ts'
+import { ALERT_CHOICES, DEFAULT_SETTINGS, REFRESH_CHOICES } from '../src/settings.ts'
+import { type Provider, ProviderError, type ProviderUsage } from '../src/types.ts'
 
 const now = new Date('2026-10-07T22:00:00Z')
 const usage = (over: Partial<ProviderUsage> = {}): ProviderUsage => ({

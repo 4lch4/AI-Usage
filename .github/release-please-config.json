@@ -8,7 +8,7 @@
       "release-type": "node",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
-      "extra-files": [{ "type": "generic", "path": "electrobun.config.ts" }]
+      "extra-files": [{ "type": "generic", "path": "apps/windows/electrobun.config.ts" }]
     }
   }
 }

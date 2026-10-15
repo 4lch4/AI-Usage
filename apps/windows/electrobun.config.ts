@@ -12,7 +12,7 @@ export default {
   build: {
     mainProcess: 'bun',
     bun: {
-      entrypoint: 'src/shell/index.ts',
+      entrypoint: 'src/index.ts',
     },
     win: {
       bundleCEF: false,
