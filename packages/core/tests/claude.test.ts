@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { createClaudeProvider, parseClaudeUsage } from '../src/providers/claude.ts'
+import { createClaudeCodeProvider } from '../src/node/claude-code.ts'
+import { parseClaudeUsage } from '../src/providers/claude.ts'
 import { ProviderError } from '../src/types.ts'
 
 const credentials = (expiresAt = 4102444800000) =>
@@ -11,8 +12,8 @@ const body = {
   seven_day_opus: null,
 }
 
-function provider(overrides: Parameters<typeof createClaudeProvider>[0] = {}) {
-  return createClaudeProvider({
+function provider(overrides: Parameters<typeof createClaudeCodeProvider>[0] = {}) {
+  return createClaudeCodeProvider({
     configDir: '/fake',
     readText: async () => credentials(),
     now: () => new Date('2026-10-07T22:00:00Z'),

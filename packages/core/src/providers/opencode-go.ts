@@ -1,5 +1,4 @@
 import { type Provider, ProviderError, type UsageWindow } from '../types.ts'
-import { readEnv } from '../windows-env.ts'
 
 const USAGE_URL = 'https://opencode.ai/zen/go/v1/usage'
 
@@ -50,20 +49,19 @@ export function parseOpenCodeGoUsage(body: unknown, now: Date): UsageWindow[] {
 export interface OpenCodeGoDeps {
   fetch?: typeof fetch
   now?: () => Date
-  /** Resolves the API key. Defaults to `OPENCODE_API_KEY` from the environment or the saved user variable. */
-  apiKey?: () => Promise<string | undefined>
+  /** Resolves the API key, or `undefined` when none is saved. */
+  apiKey: () => Promise<string | undefined>
 }
 
 /** OpenCode Go plan usage, authenticated with an API key from opencode.ai (workspace > API Keys). */
-export function createOpenCodeGoProvider(deps: OpenCodeGoDeps = {}): Provider {
+export function createOpenCodeGoProvider(deps: OpenCodeGoDeps): Provider {
   const doFetch = deps.fetch ?? fetch
   const now = deps.now ?? (() => new Date())
-  const resolveKey = deps.apiKey ?? (() => readEnv('OPENCODE_API_KEY'))
   return {
     id: 'opencode-go',
     name: 'OpenCode Go',
     async fetchWindows() {
-      const key = await resolveKey()
+      const key = await deps.apiKey()
       if (!key) {
         throw new ProviderError(
           'No OpenCode API key. Create one at opencode.ai (workspace > API Keys) and save it as OPENCODE_API_KEY.',

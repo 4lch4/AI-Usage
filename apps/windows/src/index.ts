@@ -2,9 +2,11 @@ import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type Alert, describeAlert, detectAlerts } from '@ai-usage/core/alert'
-import { applyAutostart, readAutostart, reconcileAutostart } from '@ai-usage/core/autostart'
 import { formatTooltip, worstPercent } from '@ai-usage/core/format'
-import { type IconSlot, renderTrayIcon } from '@ai-usage/core/icon'
+import { applyAutostart, readAutostart, reconcileAutostart } from '@ai-usage/core/node/autostart'
+import { type IconSlot, renderTrayIcon } from '@ai-usage/core/node/icon'
+import { createDesktopProviders } from '@ai-usage/core/node/providers'
+import { loadSettings, saveSettings } from '@ai-usage/core/node/settings-file'
 import {
   PANEL_HEIGHT,
   PANEL_WIDTH,
@@ -14,21 +16,12 @@ import {
   toPanelPayload,
 } from '@ai-usage/core/panel'
 import { positionInWorkArea, positionPanel } from '@ai-usage/core/position'
-import { createClaudeProvider } from '@ai-usage/core/providers/claude'
-import { createOpenCodeGoProvider } from '@ai-usage/core/providers/opencode-go'
 import { refreshAll } from '@ai-usage/core/refresh'
-import {
-  DEFAULT_SETTINGS,
-  isVisible,
-  loadSettings,
-  mergeSettings,
-  type Settings,
-  saveSettings,
-} from '@ai-usage/core/settings'
+import { DEFAULT_SETTINGS, isVisible, mergeSettings, type Settings } from '@ai-usage/core/settings'
 import type { Provider, ProviderId, ProviderUsage } from '@ai-usage/core/types'
 import { BrowserWindow, BuildConfig, Screen, Tray, Utils } from 'electrobun/main'
 
-const providers: Provider[] = [createClaudeProvider(), createOpenCodeGoProvider()]
+const providers: Provider[] = createDesktopProviders()
 /** Row order in the tray icon and the Providers list, so both stay stable as things are toggled. */
 const PROVIDER_ORDER = providers.map(p => p.id)
 const iconDir = join(tmpdir(), 'ai-usage')

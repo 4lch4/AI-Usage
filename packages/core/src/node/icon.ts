@@ -1,14 +1,5 @@
 import { deflateSync } from 'node:zlib'
-import { type Level, levelFor } from './format.ts'
-
-const SIZE = 32
-const COLORS: Record<Level | 'track' | 'unknown', [number, number, number, number]> = {
-  ok: [74, 222, 128, 255],
-  warn: [250, 204, 21, 255],
-  critical: [248, 113, 113, 255],
-  track: [148, 163, 184, 110],
-  unknown: [148, 163, 184, 200],
-}
+import { ICON_COLORS, ICON_SIZE, type IconSlot, iconLayout } from '../icon-layout.ts'
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n
@@ -85,39 +76,22 @@ export function encodeIco(png: Uint8Array, size: number): Uint8Array {
   return ico
 }
 
-/** One row of the tray icon: a Provider's busiest Window, or `null` for no data yet. */
-export interface IconSlot {
-  /** Used percent of the busiest Window, or `null` when there is nothing to show. */
-  value: number | null
-  /** A Provider switched off in Settings draws nothing at all, not an empty bar. */
-  visible: boolean
-}
+export type { IconSlot }
 
 export function renderTrayIcon(slots: IconSlot[]): Uint8Array {
-  return encodeIco(renderTrayPng(slots), SIZE)
+  return encodeIco(renderTrayPng(slots), ICON_SIZE)
 }
 
 /** The same meters as {@link renderTrayIcon}, as bare PNG bytes. */
 export function renderTrayPng(slots: IconSlot[]): Uint8Array {
-  const rgba = new Uint8Array(SIZE * SIZE * 4)
-  const barX = 3
-  const barWidth = SIZE - barX * 2
-  const barHeight = 10
-  const tops = [4, 18] as const
-
-  slots.forEach((slot, index) => {
-    if (!slot.visible) return
-    const top = tops[index === 0 ? 0 : 1]
-    const fillWidth =
-      slot.value === null
-        ? 0
-        : Math.max(2, Math.round((Math.min(100, slot.value) / 100) * barWidth))
-    const fill = COLORS[slot.value === null ? 'unknown' : levelFor(slot.value)]
-    for (let y = top; y < top + barHeight; y++) {
-      for (let x = barX; x < barX + barWidth; x++) {
-        rgba.set(x - barX < fillWidth ? fill : COLORS.track, (y * SIZE + x) * 4)
+  const rgba = new Uint8Array(ICON_SIZE * ICON_SIZE * 4)
+  for (const bar of iconLayout(slots)) {
+    for (let y = bar.y; y < bar.y + bar.height; y++) {
+      for (let x = bar.x; x < bar.x + bar.width; x++) {
+        const paint = x - bar.x < bar.fillWidth ? bar.fill : 'track'
+        rgba.set(ICON_COLORS[paint], (y * ICON_SIZE + x) * 4)
       }
     }
-  })
-  return encodePng(SIZE, SIZE, rgba)
+  }
+  return encodePng(ICON_SIZE, ICON_SIZE, rgba)
 }
