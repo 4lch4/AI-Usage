@@ -63,3 +63,10 @@ The popup is a single HTML string rendered by `packages/core/src/panel.ts` and r
   Panel.
 - The icon is written as an ICO wrapping a PNG. `renderTrayIcon` returns the ICO;
   `renderTrayPng` is the bare PNG the tests decode.
+- Every Panel load logs `Failed to initialize encryption: TypeError: Cannot read properties of
+  undefined (reading 'importKey')`. It is harmless. Electrobun's preload
+  (`package/src/preload/encryption.ts`) imports an AES key with `crypto.subtle`, which WebView2 only
+  exposes in a secure context, and an `html:` window is loaded with `NavigateToString`, which is
+  not one. That key only encrypts Electrobun's typed RPC socket. The Panel talks to the shell
+  through `__electrobunSendToHost` (`host-message`), which the preload sets up separately and
+  sends as plain JSON, so Settings and Refresh are unaffected.
