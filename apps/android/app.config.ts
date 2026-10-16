@@ -43,6 +43,17 @@ const config: ExpoConfig = {
   plugins: [
     'expo-secure-store',
     [
+      'expo-build-properties',
+      {
+        android: {
+          // The widget library starts WorkManager at every launch, and WorkManager creates its Room
+          // database by reflection. Without this, R8 strips that class from the release build and
+          // the app crashes before anything shows, on open and when a widget is added.
+          extraProguardRules: '-keep class * extends androidx.room.RoomDatabase { <init>(); }',
+        },
+      },
+    ],
+    [
       'react-native-android-widget',
       {
         widgets: [
