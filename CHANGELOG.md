@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/4lch4/AI-Usage/compare/v0.2.2...v0.3.0) (2026-10-17)
+
+
+### Features
+
+* **android:** 1x1 home-screen widget with OpenCode Go usage ([42aff86](https://github.com/4lch4/AI-Usage/commit/42aff86cfa3ecd7cbff2ae6285d2d0b155d11b5d))
+* **android:** 1x1 home-screen widget with OpenCode Go usage ([b51a9cb](https://github.com/4lch4/AI-Usage/commit/b51a9cb487326b55715b4f64bc8336642116753c))
+* **android:** Expo app with the OpenCode Go usage screen ([66e3156](https://github.com/4lch4/AI-Usage/commit/66e315675d2f714ff09c9089800c804ce81e7923))
+* **android:** Expo app with the OpenCode Go usage screen ([89ff35f](https://github.com/4lch4/AI-Usage/commit/89ff35fb42db56c49619cc6968cb2989553d3434))
+
+
+### Bug Fixes
+
+* **android:** build a release APK in CI so the app bundles its JavaScript ([2b40196](https://github.com/4lch4/AI-Usage/commit/2b40196c3c28830a7514e3cebb8b3e086a8e8928))
+* **android:** keep WorkManager's Room database through R8 ([8ab17ab](https://github.com/4lch4/AI-Usage/commit/8ab17ab9046c93bcf4b0c18299fb648fe0b6c914))
+
 ## [0.2.2](https://github.com/4lch4/AI-Usage/compare/v0.2.1...v0.2.2) (2026-10-15)
 
 
