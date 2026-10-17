@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Installs the APK on a running emulator, opens the app, then fires the widget's update broadcast
-# (which runs the headless widget task), and fails if the app's process crashed along the way.
+# Installs the APK on a running emulator, opens the app, fires the widget's update broadcast
+# (which runs the headless widget task), then places the widget through the launcher. Fails if the
+# app crashed or the widget does not stay on the home screen.
 # Usage: smoke-test.sh <apk> <log dir>
 set -uo pipefail
 
@@ -40,3 +41,12 @@ if [ -s "$logs/crash.txt" ]; then
   exit 1
 fi
 echo 'The app launched and survived the widget update.'
+
+adb logcat -c
+python3 "$(dirname "$0")/add-widget.py" "$logs/widget"
+placed=$?
+adb logcat -d >"$logs/widget/logcat.txt"
+echo '--- widget log'
+grep -iE 'appwidget|RNWidget|ReactNativeJS|widget|AndroidRuntime|com\.alcha\.aiusage' "$logs/widget/logcat.txt" |
+  grep -v 'Access denied' | tail -150
+exit $placed
