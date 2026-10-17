@@ -101,3 +101,46 @@ jobs:
           name: ai-usage-android-test
           path: apps/android/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+  # Installs the test APK on an emulator and launches it, so a build that crashes on open fails CI
+  # instead of on a phone. It also fires the widget's update broadcast, which runs the headless task.
+  smoke-android:
+    name: Smoke test Android
+    needs: build-android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Fetch the APK
+        uses: actions/download-artifact@v6
+        with:
+          name: ai-usage-android-test
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # As close to the owner's Galaxy S22 Ultra as an emulator gets: its current Android (16, One UI
+      # 8) and its default 1080 x 2316 screen at 450 dpi. Samsung's own launcher cannot run here, so
+      # the widget is placed with the Pixel launcher.
+      - name: Launch on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -skin 1080x2316
+          disable-animations: true
+          script: bash apps/android/scripts/smoke-test.sh apk/app-release.apk logs
+
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ai-usage-android-smoke-logs
+          path: logs
+          if-no-files-found: ignore

@@ -31,11 +31,19 @@ Electrobun app in `apps/windows`. It shows OpenCode Go only; Claude stays on the
   APK on every PR and keeps it as a workflow artifact. It is the release variant signed with Expo's
   debug key: a debug APK leaves the JavaScript out and needs a running Metro server.
 - Launcher icons are drawn from `iconLayout` by `bun run icons`, like the tray icon.
+- The 1x1 home-screen widget uses `react-native-android-widget`, which renders JSX into Android's
+  RemoteViews from a headless JS task. It draws the tray's two meters (`iconLayout`, as SVG via
+  `iconSvg`) for OpenCode Go's 5-hour Window and its busiest longer Window, with the busiest percent
+  above. Android wakes it every 30 minutes, its shortest `updatePeriodMillis`, and the app redraws
+  it after every refresh. It keeps no history, so a failed background refresh shows a dash, not
+  stale numbers. A separate background task (`expo-background-task`) would not refresh more often,
+  since Android's floor for those is 15 minutes and is often stretched, so it is not used.
 
 ## Consequences
 
 - No Claude on the phone. Adding it later means either a phone sign-in that breaks Anthropic's terms,
   or the PC relaying its numbers, which only update while the PC is on.
 - The Windows app keeps the shell it was tested on, and both apps share every tested behaviour.
-- Two shells to maintain, but each is thin, and a home-screen widget (planned next) needs
-  Android-specific code in any option.
+- Two shells to maintain, but each is thin, and the home-screen widget needs Android-specific code
+  in any option.
+- The widget lags the tray: up to 30 minutes old unless the app was opened since.

@@ -69,6 +69,11 @@ The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
 phone: see [ADR 4](docs/adr/0004-android-app.md). On first launch, paste your OpenCode API key; it
 stays on the phone. Pull down to refresh.
 
+There is also a 1x1 home-screen widget: long-press the home screen, pick **Widgets**, and add **AI
+Usage**. It shows your busiest OpenCode Go limit over the same two meters as the tray icon (5-hour
+on top, the fuller of weekly and monthly below). Android refreshes it every 30 minutes, and opening
+the app refreshes it at once. Tap it to open the app.
+
 Every PR's CI run builds a test APK, **ai-usage-android-test**, under the run's artifacts. It is signed
 with Expo's debug key, so uninstall it before installing a signed release. To build one yourself you
 need JDK 17 and the Android SDK:

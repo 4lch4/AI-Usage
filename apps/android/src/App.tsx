@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native'
 import { forgetApiKey, loadApiKey, saveApiKey } from './apiKey'
+import { showOnWidget } from './widget/render'
 
 /**
  * The Usage screen, the phone's version of the tray Panel. It shows OpenCode Go only: Claude's
@@ -38,6 +39,7 @@ export default function App() {
     const next = await refreshAll([provider], previous.current)
     previous.current = new Map(next.map(result => [result.id, result]))
     setResults(next)
+    showOnWidget(next[0])
     setNow(new Date())
     setRefreshing(false)
   }, [])
@@ -93,6 +95,7 @@ export default function App() {
             label="Forget API key"
             onPress={async () => {
               await forgetApiKey()
+              showOnWidget(undefined, 'Set key')
               previous.current = new Map()
               setResults([])
               setApiKey(null)
