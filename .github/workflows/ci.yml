@@ -124,14 +124,16 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # As close to the owner's Galaxy S22 Ultra as an emulator gets: its current Android (16, One UI
+      # 8) and its default 1080 x 2316 screen at 450 dpi. Samsung's own launcher cannot run here, so
+      # the widget is placed with the Pixel launcher.
       - name: Launch on an emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 36
           arch: x86_64
           target: google_apis
-          # A phone-sized screen, so the launcher's widget picker lays out as it does on a phone.
-          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -skin 1080x2316
           disable-animations: true
           script: bash apps/android/scripts/smoke-test.sh apk/app-release.apk logs
 

@@ -10,6 +10,9 @@ logs=$2
 package=com.alcha.aiusage
 mkdir -p "$logs"
 
+# The Galaxy S22 Ultra's default screen density; the size comes from the emulator's skin.
+adb shell wm density 450
+
 adb install -r "$apk" || exit 1
 adb logcat -c
 
