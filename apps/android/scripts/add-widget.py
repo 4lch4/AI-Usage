@@ -94,9 +94,15 @@ else:
 if not find(tree, rf'^\s*{re.escape(WIDGET_LABEL)}'):
     adb('shell', 'input', 'tap', *map(str, spot))
     time.sleep(2)
-    tree = snapshot('app-entry')
-spot = find(tree, rf'^\s*{re.escape(WIDGET_LABEL)}')
-if not spot:
+# Opening the entry can leave its widget below the fold, so nudge the list up until it shows.
+for attempt in range(6):
+    tree = snapshot(f'app-entry-{attempt}')
+    spot = find(tree, rf'^\s*{re.escape(WIDGET_LABEL)}')
+    if spot:
+        break
+    adb('shell', 'input', 'swipe', *map(str, (width // 2, height * 3 // 4, width // 2, height // 2, 600)))
+    time.sleep(1)
+else:
     give_up(f'no "{WIDGET_LABEL}" widget under "{APP_LABEL}"', tree)
 
 # Android 14's launcher offers an "Add" button after a tap on the preview; older ones need a drag.
