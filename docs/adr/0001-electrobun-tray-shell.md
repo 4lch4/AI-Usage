@@ -12,8 +12,9 @@ system webview), Tauri (Rust core, TypeScript front end), and Electron. Electrob
 that keeps the whole app in TypeScript on Bun without shipping a bundled Chromium, and its Windows
 tray reports a click with an empty action and exposes the icon's bounds, which is what a popup needs.
 
-Electrobun is in beta (2.0.3-beta.11 when this was written), and the shell cannot be exercised on
-Linux CI.
+This was written against the 2.0.3-beta.11 prerelease. Electrobun itself is past its v1 launch and
+publishes stable releases, so on 2026-10-21 the app moved to stable 2.0.4; the findings below were
+rechecked against the 2.0.4 source then and still hold. The shell cannot be exercised on Linux CI.
 
 Reading the SDK and the Windows native wrapper settles four questions the shell depends on:
 
@@ -48,7 +49,7 @@ The popup is a single HTML string rendered by `packages/core/src/panel.ts` and r
 
 - Everything that can be wrong in a way that matters (parsing, stale handling, tooltips, icon pixels,
   popup placement) is covered by `bun test` on any OS.
-- If Electrobun's beta breaks or Windows tray behavior surprises us, replacing the shell means
+- If an Electrobun release breaks or Windows tray behavior surprises us, replacing the shell means
   rewriting one file; Tauri is the fallback.
 - The shell itself is only verified by running it on Windows.
 - The Panel opens from the **Show usage** Menu item rather than a left-click, because installing a

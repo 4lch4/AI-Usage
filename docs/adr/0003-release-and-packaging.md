@@ -7,9 +7,9 @@ Date: 2026-10-08
 ## Context
 
 The app needed a build someone could install, and a way to cut a version without hand-editing files.
-Conventions were copied from the owner's Shion repository so the two repos behave the same. Electrobun
-is a beta, so the build step is the most likely thing to break in CI, and its output layout is
-produced by Hutch rather than by anything in this repo.
+Conventions were copied from the owner's Shion repository so the two repos behave the same. The
+Electrobun build step is the most likely thing to break in CI: Electrobun moves fast, and its output
+layout is produced by Hutch rather than by anything in this repo.
 
 The `.exe` cannot be signed: that needs a code-signing certificate, which is not a free dependency.
 
@@ -60,3 +60,6 @@ be published — a silent failure, which is why it is called out in a comment th
 - An unsigned build cannot be distributed to other machines smoothly, and no auto-update is offered.
 - The notification's Windows title still needs checking in a packaged build: the toast is a
   `Shell_NotifyIcon` balloon with no AppUserModelID, so Windows names it after the host process.
+- Electrobun is pinned to an exact **stable** version, not a prerelease. Dependabot only proposes
+  prereleases for a dependency already on one, so staying on stable keeps its weekly bumps on stable
+  releases.
