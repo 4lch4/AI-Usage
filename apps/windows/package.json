@@ -13,6 +13,6 @@
     "@ai-usage/core": "workspace:*"
   },
   "devDependencies": {
-    "electrobun": "2.0.3-beta.18"
+    "electrobun": "2.0.3-beta.29"
   }
 }
