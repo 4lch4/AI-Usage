@@ -60,7 +60,7 @@ setx OPENCODE_API_KEY "<key>"
 The app also reads the saved user variable directly, so it works even when launched from somewhere that
 didn't inherit it.
 
-The tray shell uses [Electrobun](https://electrobun.dev), which is in beta; see
+The tray shell uses [Electrobun](https://electrobun.dev) (pinned to a stable release); see
 [ADR 1](docs/adr/0001-electrobun-tray-shell.md).
 
 ## Android

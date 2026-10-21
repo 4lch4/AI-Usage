@@ -38,7 +38,7 @@
         "@ai-usage/core": "workspace:*",
       },
       "devDependencies": {
-        "electrobun": "2.0.3-beta.18",
+        "electrobun": "2.0.4",
       },
     },
     "packages/core": {
@@ -513,7 +513,7 @@
 
     "ee-first": ["ee-first@1.1.1", "", {}, "sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow=="],
 
-    "electrobun": ["electrobun@2.0.3-beta.18", "", { "bin": { "electrobun": "bin/electrobun.cjs" } }, "sha512-rrqNwPX2jltTQujisRaDBPzW+geQLvM7+SswXqA/Dc/lr9d9GSKMmGRff1LkMgkSSWsNGFMS7EzsBdinbRpy0w=="],
+    "electrobun": ["electrobun@2.0.4", "", { "bin": { "electrobun": "bin/electrobun.cjs" } }, "sha512-xuH4sE9A9eySgOjF+9mi9WuTv+Sa05cYY6eU5A4Rkkfek2zd59kzhWvwrb9xfJN4VPL+zM4FyTvFoH8j00DLMw=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.456", "", {}, "sha512-8hboqI6xesozteFb8aa7OGknvxUtTeRJLz0FoePysUEh/oWbddykIGdgpEJRbPRg/nIMfBf2DFos+H2MtvJl2A=="],
 
