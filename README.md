@@ -103,7 +103,7 @@ It is **not code-signed**, so SmartScreen will warn the first time. Click **More
 
 | Provider     | Source                                                                    | Needs                                                                 |
 | ------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Claude       | `GET https://api.anthropic.com/api/oauth/usage` (5-hour and weekly)       | A Claude Code sign-in in `~/.claude/.credentials.json`                |
+| Claude       | `GET https://api.anthropic.com/api/oauth/usage` (5-hour and weekly)       | A Claude Code sign-in in `~/.claude/.credentials.json`, or in WSL on Windows |
 | OpenCode Go  | `GET https://opencode.ai/zen/go/v1/usage` (5-hour, weekly, monthly)       | An API key from opencode.ai (workspace > API Keys) via `-OpenCodeApiKey` or `$env:OPENCODE_API_KEY` |
 | OpenCode Zen | `opencode.ai/console/api/billing/status` (prepaid balance)                | `-OpenCodeCookie` or `$env:OPENCODE_COOKIE` from a signed-in browser |
 
