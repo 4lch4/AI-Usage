@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/4lch4/AI-Usage/compare/v0.3.0...v0.3.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **core:** explain a signed-out Claude Code and fall back to the WSL sign-in ([7f995ed](https://github.com/4lch4/AI-Usage/commit/7f995ed900a04d5b760cabb78d126bf34aeafcf9))
+* **core:** explain a signed-out Claude Code and fall back to the WSL sign-in ([235f52a](https://github.com/4lch4/AI-Usage/commit/235f52a0b0a91fbe4e3b2cbb3dcfda94c4dc90b7))
+
 ## [0.3.0](https://github.com/4lch4/AI-Usage/compare/v0.2.2...v0.3.0) (2026-10-17)
 
 
