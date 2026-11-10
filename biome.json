@@ -85,6 +85,12 @@
           }
         }
       }
+    },
+    {
+      "includes": ["**/*.md"],
+      "formatter": {
+        "enabled": false
+      }
     }
   ]
 }
