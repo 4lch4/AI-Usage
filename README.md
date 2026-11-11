@@ -14,12 +14,12 @@ A left-click opens the tray menu, not the popup; use **Show usage**. See
 
 Open the popup and click **Settings** in the footer, or pick **Settings…** from the tray menu. You can set:
 
-| Setting              | Choices                        | Default   |
-| -------------------- | ------------------------------ | --------- |
-| Refresh every        | 1, 5, 15, 30 minutes           | 5 minutes |
-| Warn me at           | 70%, 80%, 90%, 95% used        | 90%       |
-| Show in the tray     | Claude, OpenCode Go            | both      |
-| Start with Windows  | on / off                       | off       |
+| Setting            | Choices                 | Default   |
+| ------------------ | ----------------------- | --------- |
+| Refresh every      | 1, 5, 15, 30 minutes    | 5 minutes |
+| Warn me at         | 70%, 80%, 90%, 95% used | 90%       |
+| Show in the tray   | Claude, OpenCode Go     | both      |
+| Start with Windows | on / off                | off       |
 
 Autostart writes a `HKCU\...\CurrentVersion\Run` entry pointing at the app's `launcher.exe`, so it
 needs no administrator rights and shows up in Task Manager's **Startup** tab where you can turn it off
@@ -101,11 +101,11 @@ It is **not code-signed**, so SmartScreen will warn the first time. Click **More
 .\scripts\Get-AIUsage.ps1 -Json   # JSON, the shape the tray app will consume
 ```
 
-| Provider     | Source                                                                    | Needs                                                                 |
-| ------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Claude       | `GET https://api.anthropic.com/api/oauth/usage` (5-hour and weekly)       | A Claude Code sign-in in `~/.claude/.credentials.json`, or in WSL on Windows |
-| OpenCode Go  | `GET https://opencode.ai/zen/go/v1/usage` (5-hour, weekly, monthly)       | An API key from opencode.ai (workspace > API Keys) via `-OpenCodeApiKey` or `$env:OPENCODE_API_KEY` |
-| OpenCode Zen | `opencode.ai/console/api/billing/status` (prepaid balance)                | `-OpenCodeCookie` or `$env:OPENCODE_COOKIE` from a signed-in browser |
+| Provider     | Source                                                              | Needs                                                                                               |
+| ------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Claude       | `GET https://api.anthropic.com/api/oauth/usage` (5-hour and weekly) | A Claude Code sign-in in `~/.claude/.credentials.json`, or in WSL on Windows                        |
+| OpenCode Go  | `GET https://opencode.ai/zen/go/v1/usage` (5-hour, weekly, monthly) | An API key from opencode.ai (workspace > API Keys) via `-OpenCodeApiKey` or `$env:OPENCODE_API_KEY` |
+| OpenCode Zen | `opencode.ai/console/api/billing/status` (prepaid balance)          | `-OpenCodeCookie` or `$env:OPENCODE_COOKIE` from a signed-in browser                                |
 
 If the Claude token has expired, open `claude` once so Claude Code refreshes it, then rerun the script.
 
