@@ -79,7 +79,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -96,7 +96,7 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Keep the APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ai-usage-android-test
           path: apps/android/android/app/build/outputs/apk/release/app-release.apk
@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Fetch the APK
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: ai-usage-android-test
           path: apk
@@ -139,7 +139,7 @@ jobs:
 
       - name: Keep the logs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ai-usage-android-smoke-logs
           path: logs
