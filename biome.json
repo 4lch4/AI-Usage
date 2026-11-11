@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -15,7 +15,8 @@
       "**/*.yml",
       "**/*.yaml",
       ".github/**/*.yml",
-      ".github/**/*.yaml"
+      ".github/**/*.yaml",
+      "!**/CHANGELOG.md"
     ]
   },
   "formatter": {
@@ -87,10 +88,21 @@
       }
     },
     {
-      "includes": ["**/*.md"],
+      "includes": ["docs/adr/**"],
       "formatter": {
         "enabled": false
       }
     }
-  ]
+  ],
+  "markdown": {
+    "formatter": {
+      "proseWrap": "preserve"
+    }
+  },
+  "yaml": {
+    "formatter": {
+      "quoteStyle": "single",
+      "bracketSpacing": false
+    }
+  }
 }
