@@ -64,7 +64,7 @@ jobs:
       # it fails with "The installer package is incomplete". All three ship together, keeping their
       # build names, because the stem has to match the executable's.
       - name: Stage the installer
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ai-usage-installer
           path: |
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Download the installer files
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ai-usage-installer
           path: dist
